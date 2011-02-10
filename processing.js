@@ -1,6 +1,6 @@
 /*
 
-    P R O C E S S I N G . J S - @VERSION@
+    P R O C E S S I N G . J S - 1.0.0
     a port of the Processing visualization language
 
     License       : MIT
@@ -1207,18 +1207,19 @@
       }
     };
 
+    this.curContext = undefined;
+    this.isStrokeDirty = true;
+    this.isFillDirty = true;
+    
     // "Private" variables used to maintain state
-    var curContext,
-        curSketch,
+    var curSketch,
         online = true,
         doFill = true,
         fillStyle = [1.0, 1.0, 1.0, 1.0],
         currentFillColor = 0xFFFFFFFF,
-        isFillDirty = true,
         doStroke = true,
         strokeStyle = [0.8, 0.8, 0.8, 1.0],
         currentStrokeColor = 0xFFFDFDFD,
-        isStrokeDirty = true,
         lineWidth = 1,
         loopStarted = false,
         doLoop = true,
@@ -1355,12 +1356,11 @@
         cameraFar = cameraZ * 10,
         cameraAspect = curElement.width / curElement.height;
 
-    var vertArray = [],
-        curveVertArray = [],
-        curveVertCount = 0,
-        isCurve = false,
-        isBezier = false,
-        firstVert = true;
+    p.vertArray = [];
+    p.curveVertCount = 0;
+    p.isCurve = false;
+    p.isBezier = false;
+    p.firstVert = true;
 
     //PShape stuff
     var curShapeMode = PConstants.CORNER;
@@ -1848,19 +1848,19 @@
     function uniformf(cacheId, programObj, varName, varValue) {
       var varLocation = curContextCache.locations[cacheId];
       if(varLocation === undef) {
-        varLocation = curContext.getUniformLocation(programObj, varName);
+        varLocation = p.curContext.getUniformLocation(programObj, varName);
         curContextCache.locations[cacheId] = varLocation;
       }
       // the variable won't be found if it was optimized out.
       if (varLocation !== -1) {
         if (varValue.length === 4) {
-          curContext.uniform4fv(varLocation, varValue);
+          p.curContext.uniform4fv(varLocation, varValue);
         } else if (varValue.length === 3) {
-          curContext.uniform3fv(varLocation, varValue);
+          p.curContext.uniform3fv(varLocation, varValue);
         } else if (varValue.length === 2) {
-          curContext.uniform2fv(varLocation, varValue);
+          p.curContext.uniform2fv(varLocation, varValue);
         } else {
-          curContext.uniform1f(varLocation, varValue);
+          p.curContext.uniform1f(varLocation, varValue);
         }
       }
     }
@@ -1887,19 +1887,19 @@
     function uniformi(cacheId, programObj, varName, varValue) {
       var varLocation = curContextCache.locations[cacheId];
       if(varLocation === undef) {
-        varLocation = curContext.getUniformLocation(programObj, varName);
+        varLocation = p.curContext.getUniformLocation(programObj, varName);
         curContextCache.locations[cacheId] = varLocation;
       }
       // the variable won't be found if it was optimized out.
       if (varLocation !== -1) {
         if (varValue.length === 4) {
-          curContext.uniform4iv(varLocation, varValue);
+          p.curContext.uniform4iv(varLocation, varValue);
         } else if (varValue.length === 3) {
-          curContext.uniform3iv(varLocation, varValue);
+          p.curContext.uniform3iv(varLocation, varValue);
         } else if (varValue.length === 2) {
-          curContext.uniform2iv(varLocation, varValue);
+          p.curContext.uniform2iv(varLocation, varValue);
         } else {
-          curContext.uniform1i(varLocation, varValue);
+          p.curContext.uniform1i(varLocation, varValue);
         }
       }
     }
@@ -1925,13 +1925,13 @@
     function vertexAttribPointer(cacheId, programObj, varName, size, VBO) {
       var varLocation = curContextCache.attributes[cacheId];
       if(varLocation === undef) {
-        varLocation = curContext.getAttribLocation(programObj, varName);
+        varLocation = p.curContext.getAttribLocation(programObj, varName);
         curContextCache.attributes[cacheId] = varLocation;
       }
       if (varLocation !== -1) {
-        curContext.bindBuffer(curContext.ARRAY_BUFFER, VBO);
-        curContext.vertexAttribPointer(varLocation, size, curContext.FLOAT, false, 0, 0);
-        curContext.enableVertexAttribArray(varLocation);
+        p.curContext.bindBuffer(p.curContext.ARRAY_BUFFER, VBO);
+        p.curContext.vertexAttribPointer(varLocation, size, p.curContext.FLOAT, false, 0, 0);
+        p.curContext.enableVertexAttribArray(varLocation);
       }
     }
 
@@ -1949,11 +1949,11 @@
     function disableVertexAttribPointer(cacheId, programObj, varName){
       var varLocation = curContextCache.attributes[cacheId];
       if(varLocation === undef) {
-        varLocation = curContext.getAttribLocation(programObj, varName);
+        varLocation = p.curContext.getAttribLocation(programObj, varName);
         curContextCache.attributes[cacheId] = varLocation;
       }
       if (varLocation !== -1) {
-        curContext.disableVertexAttribArray(varLocation);
+        p.curContext.disableVertexAttribArray(varLocation);
       }
     }
 
@@ -1981,17 +1981,17 @@
     function uniformMatrix(cacheId, programObj, varName, transpose, matrix) {
       var varLocation = curContextCache.locations[cacheId];
       if(varLocation === undef) {
-        varLocation = curContext.getUniformLocation(programObj, varName);
+        varLocation = p.curContext.getUniformLocation(programObj, varName);
         curContextCache.locations[cacheId] = varLocation;
       }
       // the variable won't be found if it was optimized out.
       if (varLocation !== -1) {
         if (matrix.length === 16) {
-          curContext.uniformMatrix4fv(varLocation, transpose, matrix);
+          p.curContext.uniformMatrix4fv(varLocation, transpose, matrix);
         } else if (matrix.length === 9) {
-          curContext.uniformMatrix3fv(varLocation, transpose, matrix);
+          p.curContext.uniformMatrix3fv(varLocation, transpose, matrix);
         } else {
-          curContext.uniformMatrix2fv(varLocation, transpose, matrix);
+          p.curContext.uniformMatrix2fv(varLocation, transpose, matrix);
         }
       }
     }
@@ -2033,25 +2033,25 @@
      * @returns {WebGLProgram} A program object
     */
     var createProgramObject = function(curContext, vetexShaderSource, fragmentShaderSource) {
-      var vertexShaderObject = curContext.createShader(curContext.VERTEX_SHADER);
-      curContext.shaderSource(vertexShaderObject, vetexShaderSource);
-      curContext.compileShader(vertexShaderObject);
-      if (!curContext.getShaderParameter(vertexShaderObject, curContext.COMPILE_STATUS)) {
-        throw curContext.getShaderInfoLog(vertexShaderObject);
+      var vertexShaderObject = p.curContext.createShader(p.curContext.VERTEX_SHADER);
+      p.curContext.shaderSource(vertexShaderObject, vetexShaderSource);
+      p.curContext.compileShader(vertexShaderObject);
+      if (!p.curContext.getShaderParameter(vertexShaderObject, p.curContext.COMPILE_STATUS)) {
+        throw p.curContext.getShaderInfoLog(vertexShaderObject);
       }
 
-      var fragmentShaderObject = curContext.createShader(curContext.FRAGMENT_SHADER);
-      curContext.shaderSource(fragmentShaderObject, fragmentShaderSource);
-      curContext.compileShader(fragmentShaderObject);
-      if (!curContext.getShaderParameter(fragmentShaderObject, curContext.COMPILE_STATUS)) {
-        throw curContext.getShaderInfoLog(fragmentShaderObject);
+      var fragmentShaderObject = p.curContext.createShader(p.curContext.FRAGMENT_SHADER);
+      p.curContext.shaderSource(fragmentShaderObject, fragmentShaderSource);
+      p.curContext.compileShader(fragmentShaderObject);
+      if (!p.curContext.getShaderParameter(fragmentShaderObject, p.curContext.COMPILE_STATUS)) {
+        throw p.curContext.getShaderInfoLog(fragmentShaderObject);
       }
 
-      var programObject = curContext.createProgram();
-      curContext.attachShader(programObject, vertexShaderObject);
-      curContext.attachShader(programObject, fragmentShaderObject);
-      curContext.linkProgram(programObject);
-      if (!curContext.getProgramParameter(programObject, curContext.LINK_STATUS)) {
+      var programObject = p.curContext.createProgram();
+      p.curContext.attachShader(programObject, vertexShaderObject);
+      p.curContext.attachShader(programObject, fragmentShaderObject);
+      p.curContext.linkProgram(programObject);
+      if (!p.curContext.getProgramParameter(programObject, p.curContext.LINK_STATUS)) {
         throw "Error linking shaders.";
       }
 
@@ -2208,33 +2208,33 @@
        * PShape s = loadShapes("blah.svg");
        * shape(s);
        */
-      this.draw = function(){
+      this.draw = function(p){
         if (this.visible) {
-          this.pre();
-          this.drawImpl();
-          this.post();
+          this.pre(p);
+          this.drawImpl(p);
+          this.post(p);
         }
       };
       /**
        * @member PShape
        * the drawImpl() function draws the SVG document.
        */
-      this.drawImpl = function(){
+      this.drawImpl = function(p){
         if (this.family === PConstants.GROUP) {
-          this.drawGroup();
+          this.drawGroup(p);
         } else if (this.family === PConstants.PRIMITIVE) {
-          this.drawPrimitive();
+          this.drawPrimitive(p);
         } else if (this.family === PConstants.GEOMETRY) {
-          this.drawGeometry();
+          this.drawGeometry(p);
         } else if (this.family === PConstants.PATH) {
-          this.drawPath();
+          this.drawPath(p);
         }
       };
       /**
        * @member PShape
        * The drawPath() function draws the <path> part of the SVG document.
        */
-      this.drawPath = function(){
+      this.drawPath = function(p){
         if (this.vertices.length === 0) { return; }
 
         p.beginShape();
@@ -2258,9 +2258,9 @@
               case PConstants.VERTEX:
                 p.vertex(this.vertices[index][0], this.vertices[index][1]);
                 if ( this.vertices[index]["moveTo"] === true) {
-                  vertArray[vertArray.length-1]["moveTo"] = true;
+                  p.vertArray[p.vertArray.length-1]["moveTo"] = true;
                 } else if ( this.vertices[index]["moveTo"] === false) {
-                  vertArray[vertArray.length-1]["moveTo"] = false;
+                  p.vertArray[p.vertArray.length-1]["moveTo"] = false;
                 }
                 p.breakShape = false;
                 index++;
@@ -2286,9 +2286,9 @@
                 case PConstants.VERTEX:
                   p.vertex(this.vertices[index][0], this.vertices[index][1], this.vertices[index][2]);
                   if (this.vertices[index]["moveTo"] === true) {
-                    vertArray[vertArray.length-1]["moveTo"] = true;
+                    p.vertArray[p.vertArray.length-1]["moveTo"] = true;
                   } else if (this.vertices[index]["moveTo"] === false) {
-                    vertArray[vertArray.length-1]["moveTo"] = false;
+                    p.vertArray[p.vertArray.length-1]["moveTo"] = false;
                   }
                   p.breakShape = false;
                   break;
@@ -2315,7 +2315,7 @@
        * @member PShape
        * The drawGeometry() function draws the geometry part of the SVG document.
        */
-      this.drawGeometry = function() {
+      this.drawGeometry = function(p) {
         p.beginShape(this.kind);
         var i;
         if (this.style) {
@@ -2338,16 +2338,16 @@
        * @member PShape
        * The drawGroup() function draws the <g> part of the SVG document.
        */
-      this.drawGroup = function() {
+      this.drawGroup = function(p) {
         for (var i = 0; i < this.children.length; i++) {
-          this.children[i].draw();
+          this.children[i].draw(p);
         }
       };
       /**
        * @member PShape
        * The drawPrimitive() function draws SVG document shape elements. These can be point, line, triangle, quad, rect, ellipse, arc, box, or sphere.
        */
-      this.drawPrimitive = function() {
+      this.drawPrimitive = function(p) {
         switch (this.kind) {
           case PConstants.POINT:
             p.point(this.params[0], this.params[1]);
@@ -2405,22 +2405,22 @@
        * @member PShape
        * The pre() function performs the preparations before the SVG is drawn. This includes doing transformations and storing previous styles.
        */
-      this.pre = function() {
+      this.pre = function(p) {
         if (this.matrix) {
           p.pushMatrix();
-          curContext.transform(this.matrix.elements[0], this.matrix.elements[3], this.matrix.elements[1], this.matrix.elements[4], this.matrix.elements[2], this.matrix.elements[5]);
+          p.curContext.transform(this.matrix.elements[0], this.matrix.elements[3], this.matrix.elements[1], this.matrix.elements[4], this.matrix.elements[2], this.matrix.elements[5]);
           //p.applyMatrix(this.matrix.elements[0],this.matrix.elements[0]);
         }
         if (this.style) {
           p.pushStyle();
-          this.styles();
+          this.styles(p);
         }
       };
       /**
        * @member PShape
        * The post() function performs the necessary actions after the SVG is drawn. This includes removing transformations and removing added styles.
        */
-      this.post = function() {
+      this.post = function(p) {
         if (this.matrix) {
           p.popMatrix();
         }
@@ -2432,7 +2432,7 @@
        * @member PShape
        * The styles() function changes the Processing's current styles
        */
-      this.styles = function() {
+      this.styles = function(p) {
         if (this.stroke) {
           p.stroke(this.strokeColor);
           p.strokeWeight(this.strokeWeight);
@@ -3379,7 +3379,7 @@
         if (this.vertices.length > 0) {
           this.parsePathCode(PConstants.VERTEX);
           this.parsePathVertex(px, py);
-          // add property to distinguish between curContext.moveTo or curContext.lineTo
+          // add property to distinguish between p.curContext.moveTo or p.curContext.lineTo
           this.vertices[this.vertices.length-1]["moveTo"] = false;
         } else {
           throw ("Path must start with M/m");
@@ -3397,7 +3397,7 @@
         }
         this.parsePathCode(PConstants.VERTEX);
         this.parsePathVertex(px, py);
-        // add property to distinguish between curContext.moveTo or curContext.lineTo
+        // add property to distinguish between p.curContext.moveTo or p.curContext.lineTo
         this.vertices[this.vertices.length-1]["moveTo"] = true;
       },
       /**
@@ -3810,6 +3810,7 @@
      * @see shapeMode()
      */
     p.shape = function(shape, x, y, width, height) {
+      var p = this;
       if (arguments.length >= 1 && arguments[0] !== null) {
         if (shape.isVisible()) {
           p.pushMatrix();
@@ -3839,7 +3840,7 @@
               p.translate(x, y);
             }
           }
-          shape.draw();
+          shape.draw(p);
           if ((arguments.length === 1 && curShapeMode === PConstants.CENTER ) || arguments.length > 1) {
             p.popMatrix();
           }
@@ -6712,14 +6713,14 @@
     // Canvas-Matrix manipulation
     ////////////////////////////////////////////////////////////////////////////
 
-    function saveContext() {
-      curContext.save();
+    p.saveContext = function saveContext(p) {
+      p.curContext.save();
     }
 
-    function restoreContext() {
-      curContext.restore();
-      isStrokeDirty = true;
-      isFillDirty = true;
+    p.restoreContext = function restoreContext(p) {
+      p.curContext.restore();
+      p.isStrokeDirty = true;
+      p.isFillDirty = true;
     }
 
     /**
@@ -6764,7 +6765,7 @@
         forwardTransform.translate(x, y, z);
         reverseTransform.invTranslate(x, y, z);
       } else {
-        curContext.translate(x, y);
+        p.curContext.translate(x, y);
       }
     };
 
@@ -6797,7 +6798,7 @@
         forwardTransform.scale(x, y, z);
         reverseTransform.invScale(x, y, z);
       } else {
-        curContext.scale(x, y || x);
+        p.curContext.scale(x, y || x);
       }
     };
 
@@ -6821,7 +6822,7 @@
       if (p.use3DContext) {
         userMatrixStack.load(modelView);
       } else {
-        saveContext();
+        p.saveContext(p);
       }
     };
 
@@ -6840,7 +6841,7 @@
       if (p.use3DContext) {
         modelView.set(userMatrixStack.pop());
       } else {
-        restoreContext();
+        p.restoreContext(p);
       }
     };
 
@@ -6859,7 +6860,7 @@
         forwardTransform.reset();
         reverseTransform.reset();
       } else {
-        curContext.setTransform(1,0,0,1,0,0);
+        p.curContext.setTransform(1,0,0,1,0,0);
       }
     };
 
@@ -6999,7 +7000,7 @@
         forwardTransform.rotateZ(angleInRadians);
         reverseTransform.invRotateZ(angleInRadians);
       } else {
-        curContext.rotate(angleInRadians);
+        p.curContext.rotate(angleInRadians);
       }
     };
 
@@ -7019,7 +7020,7 @@
     */
     p.pushStyle = function pushStyle() {
       // Save the canvas state.
-      saveContext();
+      p.saveContext(p);
 
       p.pushMatrix();
 
@@ -7056,7 +7057,7 @@
       var oldState = styleArray.pop();
 
       if (oldState) {
-        restoreContext();
+        p.restoreContext(p);
 
         p.popMatrix();
 
@@ -7228,7 +7229,7 @@
       if (p.use3DContext) {
         // even if the color buffer isn't cleared with background(),
         // the depth buffer needs to be cleared regardless.
-        curContext.clear(curContext.DEPTH_BUFFER_BIT);
+        p.curContext.clear(p.curContext.DEPTH_BUFFER_BIT);
         curContextCache = { attributes: {}, locations: {} };
         // Delete all the lighting states and the materials the
         // user set in the last draw() call.
@@ -7240,9 +7241,9 @@
         p.camera();
         p.draw();
       } else {
-        saveContext();
+        p.saveContext(p);
         p.draw();
-        restoreContext();
+        p.restoreContext(p);
       }
 
       inDraw = false;
@@ -7959,6 +7960,7 @@
      * @see #print
      */
     p.println = function println(message) {
+return;
       var bufferLen = logBuffer.length;
       if (bufferLen) {
         Processing.logger.log(logBuffer.join(""));
@@ -8817,13 +8819,13 @@
       if (!curSketch.options.isTransparent) {
         if (p.use3DContext) {
           // fill background default opaque gray
-          curContext.clearColor(204 / 255, 204 / 255, 204 / 255, 1.0);
-          curContext.clear(curContext.COLOR_BUFFER_BIT | curContext.DEPTH_BUFFER_BIT);
+          p.curContext.clearColor(204 / 255, 204 / 255, 204 / 255, 1.0);
+          p.curContext.clear(p.curContext.COLOR_BUFFER_BIT | p.curContext.DEPTH_BUFFER_BIT);
         } else {
           // fill background default opaque gray
-          curContext.fillStyle = "rgb(204, 204, 204)";
-          curContext.fillRect(0, 0, p.width, p.height);
-          isFillDirty = true;
+          p.curContext.fillStyle = "rgb(204, 204, 204)";
+          p.curContext.fillRect(0, 0, p.width, p.height);
+          p.isFillDirty = true;
         }
       }
     };
@@ -8855,15 +8857,15 @@
             curElement.setAttribute("width", aWidth);
             curElement.setAttribute("height", aHeight);
           }
-          curContext = curElement.getContext("experimental-webgl");
+          p.curContext = curElement.getContext("experimental-webgl");
           p.use3DContext = true;
-          canTex = curContext.createTexture(); // texture
-          textTex = curContext.createTexture(); // texture
+          canTex = p.curContext.createTexture(); // texture
+          textTex = p.curContext.createTexture(); // texture
         } catch(e_size) {
           Processing.debug(e_size);
         }
 
-        if (!curContext) {
+        if (!p.curContext) {
           throw "WebGL context is not supported on this browser.";
         } else {
           for (var i = 0; i < PConstants.SINCOS_LENGTH; i++) {
@@ -8871,27 +8873,27 @@
             cosLUT[i] = p.cos(i * (PConstants.PI / 180) * 0.5);
           }
           // Set defaults
-          curContext.viewport(0, 0, curElement.width, curElement.height);
-          curContext.enable(curContext.DEPTH_TEST);
-          curContext.enable(curContext.BLEND);
-          curContext.blendFunc(curContext.SRC_ALPHA, curContext.ONE_MINUS_SRC_ALPHA);
+          p.curContext.viewport(0, 0, curElement.width, curElement.height);
+          p.curContext.enable(p.curContext.DEPTH_TEST);
+          p.curContext.enable(p.curContext.BLEND);
+          p.curContext.blendFunc(p.curContext.SRC_ALPHA, p.curContext.ONE_MINUS_SRC_ALPHA);
           refreshBackground(); // sets clearColor default;
 
           // Create the program objects to render 2D (points, lines) and
           // 3D (spheres, boxes) shapes. Because 2D shapes are not lit,
           // lighting calculations could be ommitted from that program object.
-          programObject2D = createProgramObject(curContext, vertexShaderSource2D, fragmentShaderSource2D);
+          programObject2D = createProgramObject(p.curContext, vertexShaderSource2D, fragmentShaderSource2D);
 
           // set the defaults
-          curContext.useProgram(programObject2D);
+          p.curContext.useProgram(programObject2D);
           p.strokeWeight(1.0);
 
-          programObject3D = createProgramObject(curContext, vertexShaderSource3D, fragmentShaderSource3D);
-          programObjectUnlitShape = createProgramObject(curContext, vShaderSrcUnlitShape, fShaderSrcUnlitShape);
+          programObject3D = createProgramObject(p.curContext, vertexShaderSource3D, fragmentShaderSource3D);
+          programObjectUnlitShape = createProgramObject(p.curContext, vShaderSrcUnlitShape, fShaderSrcUnlitShape);
 
           // Now that the programs have been compiled, we can set the default
           // states for the lights.
-          curContext.useProgram(programObject3D);
+          p.curContext.useProgram(programObject3D);
 
           // assume we aren't using textures by default
           uniformi("usingTexture3d", programObject3D, "usingTexture", usingTexture);
@@ -8901,55 +8903,55 @@
           p.specular(0, 0, 0);
 
           // Create buffers for 3D primitives
-          boxBuffer = curContext.createBuffer();
-          curContext.bindBuffer(curContext.ARRAY_BUFFER, boxBuffer);
-          curContext.bufferData(curContext.ARRAY_BUFFER, boxVerts, curContext.STATIC_DRAW);
+          boxBuffer = p.curContext.createBuffer();
+          p.curContext.bindBuffer(p.curContext.ARRAY_BUFFER, boxBuffer);
+          p.curContext.bufferData(p.curContext.ARRAY_BUFFER, boxVerts, p.curContext.STATIC_DRAW);
 
-          boxNormBuffer = curContext.createBuffer();
-          curContext.bindBuffer(curContext.ARRAY_BUFFER, boxNormBuffer);
-          curContext.bufferData(curContext.ARRAY_BUFFER, boxNorms, curContext.STATIC_DRAW);
+          boxNormBuffer = p.curContext.createBuffer();
+          p.curContext.bindBuffer(p.curContext.ARRAY_BUFFER, boxNormBuffer);
+          p.curContext.bufferData(p.curContext.ARRAY_BUFFER, boxNorms, p.curContext.STATIC_DRAW);
 
-          boxOutlineBuffer = curContext.createBuffer();
-          curContext.bindBuffer(curContext.ARRAY_BUFFER, boxOutlineBuffer);
-          curContext.bufferData(curContext.ARRAY_BUFFER, boxOutlineVerts, curContext.STATIC_DRAW);
+          boxOutlineBuffer = p.curContext.createBuffer();
+          p.curContext.bindBuffer(p.curContext.ARRAY_BUFFER, boxOutlineBuffer);
+          p.curContext.bufferData(p.curContext.ARRAY_BUFFER, boxOutlineVerts, p.curContext.STATIC_DRAW);
 
           // used to draw the rectangle and the outline
-          rectBuffer = curContext.createBuffer();
-          curContext.bindBuffer(curContext.ARRAY_BUFFER, rectBuffer);
-          curContext.bufferData(curContext.ARRAY_BUFFER, rectVerts, curContext.STATIC_DRAW);
+          rectBuffer = p.curContext.createBuffer();
+          p.curContext.bindBuffer(p.curContext.ARRAY_BUFFER, rectBuffer);
+          p.curContext.bufferData(p.curContext.ARRAY_BUFFER, rectVerts, p.curContext.STATIC_DRAW);
 
-          rectNormBuffer = curContext.createBuffer();
-          curContext.bindBuffer(curContext.ARRAY_BUFFER, rectNormBuffer);
-          curContext.bufferData(curContext.ARRAY_BUFFER, rectNorms, curContext.STATIC_DRAW);
+          rectNormBuffer = p.curContext.createBuffer();
+          p.curContext.bindBuffer(p.curContext.ARRAY_BUFFER, rectNormBuffer);
+          p.curContext.bufferData(p.curContext.ARRAY_BUFFER, rectNorms, p.curContext.STATIC_DRAW);
 
           // The sphere vertices are specified dynamically since the user
           // can change the level of detail. Everytime the user does that
           // using sphereDetail(), the new vertices are calculated.
-          sphereBuffer = curContext.createBuffer();
+          sphereBuffer = p.curContext.createBuffer();
 
-          lineBuffer = curContext.createBuffer();
+          lineBuffer = p.curContext.createBuffer();
 
           // Shape buffers
-          fillBuffer = curContext.createBuffer();
-          fillColorBuffer = curContext.createBuffer();
-          strokeColorBuffer = curContext.createBuffer();
-          shapeTexVBO = curContext.createBuffer();
+          fillBuffer = p.curContext.createBuffer();
+          fillColorBuffer = p.curContext.createBuffer();
+          strokeColorBuffer = p.curContext.createBuffer();
+          shapeTexVBO = p.curContext.createBuffer();
 
-          pointBuffer = curContext.createBuffer();
-          curContext.bindBuffer(curContext.ARRAY_BUFFER, pointBuffer);
-          curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array([0, 0, 0]), curContext.STATIC_DRAW);
+          pointBuffer = p.curContext.createBuffer();
+          p.curContext.bindBuffer(p.curContext.ARRAY_BUFFER, pointBuffer);
+          p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array([0, 0, 0]), p.curContext.STATIC_DRAW);
 
-          textBuffer = curContext.createBuffer();
-          curContext.bindBuffer(curContext.ARRAY_BUFFER, textBuffer );
-          curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array([1,1,0,-1,1,0,-1,-1,0,1,-1,0]), curContext.STATIC_DRAW);
+          textBuffer = p.curContext.createBuffer();
+          p.curContext.bindBuffer(p.curContext.ARRAY_BUFFER, textBuffer );
+          p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array([1,1,0,-1,1,0,-1,-1,0,1,-1,0]), p.curContext.STATIC_DRAW);
 
-          textureBuffer = curContext.createBuffer();
-          curContext.bindBuffer(curContext.ARRAY_BUFFER, textureBuffer);
-          curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array([0,0,1,0,1,1,0,1]), curContext.STATIC_DRAW);
+          textureBuffer = p.curContext.createBuffer();
+          p.curContext.bindBuffer(p.curContext.ARRAY_BUFFER, textureBuffer);
+          p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array([0,0,1,0,1,1,0,1]), p.curContext.STATIC_DRAW);
 
-          indexBuffer = curContext.createBuffer();
-          curContext.bindBuffer(curContext.ELEMENT_ARRAY_BUFFER, indexBuffer);
-          curContext.bufferData(curContext.ELEMENT_ARRAY_BUFFER, new Uint16Array([0,1,2,2,3,0]), curContext.STATIC_DRAW);
+          indexBuffer = p.curContext.createBuffer();
+          p.curContext.bindBuffer(p.curContext.ELEMENT_ARRAY_BUFFER, indexBuffer);
+          p.curContext.bufferData(p.curContext.ELEMENT_ARRAY_BUFFER, new Uint16Array([0,1,2,2,3,0]), p.curContext.STATIC_DRAW);
 
           cam = new PMatrix3D();
           cameraInv = new PMatrix3D();
@@ -8976,9 +8978,9 @@
         p.stroke(0);
         p.fill(255);
       } else {
-        if (curContext === undef) {
+        if (p.curContext === undef) {
           // size() was called without p.init() default context, ie. p.createGraphics()
-          curContext = curElement.getContext("2d");
+          p.curContext = curElement.getContext("2d");
           p.use3DContext = false;
           userMatrixStack = new PMatrixStack();
           modelView = new PMatrix2D();
@@ -8989,10 +8991,10 @@
       // a 3d context was not specified. This is so that a 2d context will be
       // available if size() was not called.
       var props = {
-        fillStyle: curContext.fillStyle,
-        strokeStyle: curContext.strokeStyle,
-        lineCap: curContext.lineCap,
-        lineJoin: curContext.lineJoin
+        fillStyle: p.curContext.fillStyle,
+        strokeStyle: p.curContext.strokeStyle,
+        lineCap: p.curContext.lineCap,
+        lineJoin: p.curContext.lineJoin
       };
       // remove the style width and height properties to ensure that the canvas gets set to
       // aWidth and aHeight coming in
@@ -9006,7 +9008,7 @@
 
       for (var j in props) {
         if (props) {
-          curContext[j] = props[j];
+          p.curContext[j] = props[j];
         }
       }
 
@@ -9017,7 +9019,7 @@
       maxPixelsCached = Math.max(1000, aWidth * aHeight * 0.05);
 
       // Externalize the context
-      p.externals.context = curContext;
+      p.externals.context = p.curContext;
 
       /**
       * This function takes content from a canvas and turns it into an ImageData object to be used with a PImage
@@ -9028,13 +9030,13 @@
       */
       p.toImageData = function() {
         if(!p.use3DContext){
-          return curContext.getImageData(0, 0, this.width, this.height);
+          return p.curContext.getImageData(0, 0, this.width, this.height);
         } else {
           var c = document.createElement("canvas");
           var ctx = c.getContext("2d");
           var obj = ctx.createImageData(this.width, this.height);
           var uBuff = new Uint8Array(this.width * this.height * 4);
-          curContext.readPixels(0,0,this.width,this.height,curContext.RGBA,curContext.UNSIGNED_BYTE, uBuff);
+          p.curContext.readPixels(0,0,this.width,this.height,p.curContext.RGBA,p.curContext.UNSIGNED_BYTE, uBuff);
           for(var i =0; i < uBuff.length; i++){
             obj.data[i] = uBuff[(this.height - 1 - Math.floor(i / 4 / this.width)) * this.width * 4 + (i % (this.width * 4))];
           }
@@ -9084,7 +9086,7 @@
         view.apply(modelView.array());
         view.mult(pos, pos);
 
-        curContext.useProgram(programObject3D);
+        p.curContext.useProgram(programObject3D);
         uniformf("lights.color.3d." + lightCount, programObject3D, "lights[" + lightCount + "].color", [r / 255, g / 255, b / 255]);
         uniformf("lights.position.3d." + lightCount, programObject3D, "lights[" + lightCount + "].position", pos.array());
         uniformi("lights.type.3d." + lightCount, programObject3D, "lights[" + lightCount + "].type", 0);
@@ -9126,7 +9128,7 @@
           throw "can only create " + PConstants.MAX_LIGHTS + " lights";
         }
 
-        curContext.useProgram(programObject3D);
+        p.curContext.useProgram(programObject3D);
 
         // Less code than manually multiplying, but I'll fix
         // this when I have more time.
@@ -9173,7 +9175,7 @@
     */
     p.lightFalloff = function lightFalloff(constant, linear, quadratic) {
       if (p.use3DContext) {
-        curContext.useProgram(programObject3D);
+        p.curContext.useProgram(programObject3D);
         uniformf("falloff3d", programObject3D, "falloff", [constant, linear, quadratic]);
       }
     };
@@ -9199,7 +9201,7 @@
     */
     p.lightSpecular = function lightSpecular(r, g, b) {
       if (p.use3DContext) {
-        curContext.useProgram(programObject3D);
+        p.curContext.useProgram(programObject3D);
         uniformf("specular3d", programObject3D, "specular", [r / 255, g / 255, b / 255]);
       }
     };
@@ -9265,7 +9267,7 @@
         view.apply(modelView.array());
         view.mult(pos, pos);
 
-        curContext.useProgram(programObject3D);
+        p.curContext.useProgram(programObject3D);
         uniformf("lights.color.3d." + lightCount, programObject3D, "lights[" + lightCount + "].color", [r / 255, g / 255, b / 255]);
         uniformf("lights.position.3d." + lightCount, programObject3D, "lights[" + lightCount + "].position", pos.array());
         uniformi("lights.type.3d." + lightCount, programObject3D, "lights[" + lightCount + "].type", 2);
@@ -9286,7 +9288,7 @@
     p.noLights = function noLights() {
       if (p.use3DContext) {
         lightCount = 0;
-        curContext.useProgram(programObject3D);
+        p.curContext.useProgram(programObject3D);
         uniformi("lightCount3d", programObject3D, "lightCount", lightCount);
       }
     };
@@ -9326,7 +9328,7 @@
           throw "can only create " + PConstants.MAX_LIGHTS + " lights";
         }
 
-        curContext.useProgram(programObject3D);
+        p.curContext.useProgram(programObject3D);
 
         // place the point in view space once instead of once per vertex
         // in the shader.
@@ -9612,7 +9614,7 @@
         proj.transpose();
 
         if (doFill === true) {
-          curContext.useProgram(programObject3D);
+          p.curContext.useProgram(programObject3D);
 
           disableVertexAttribPointer("aTexture3d", programObject3D, "aTexture");
 
@@ -9624,8 +9626,8 @@
           // since they share the same depth values). This is not entirely
           // working, but it's a start for drawing the outline. So
           // developers can start playing around with styles.
-          curContext.enable(curContext.POLYGON_OFFSET_FILL);
-          curContext.polygonOffset(1, 1);
+          p.curContext.enable(p.curContext.POLYGON_OFFSET_FILL);
+          p.curContext.polygonOffset(1, 1);
           uniformf("color3d", programObject3D, "color", fillStyle);
 
           // Create the normal transformation matrix
@@ -9651,12 +9653,12 @@
           // array. No idea why, so I'm passing in dummy data.
           vertexAttribPointer("aColor3d", programObject3D, "aColor", 3, boxNormBuffer);
 
-          curContext.drawArrays(curContext.TRIANGLES, 0, boxVerts.length / 3);
-          curContext.disable(curContext.POLYGON_OFFSET_FILL);
+          p.curContext.drawArrays(p.curContext.TRIANGLES, 0, boxVerts.length / 3);
+          p.curContext.disable(p.curContext.POLYGON_OFFSET_FILL);
         }
 
         if (lineWidth > 0 && doStroke) {
-          curContext.useProgram(programObject2D);
+          p.curContext.useProgram(programObject2D);
           uniformMatrix("model2d", programObject2D, "model", false, model.array());
           uniformMatrix("view2d", programObject2D, "view", false, view.array());
           uniformMatrix("projection2d", programObject2D, "projection", false, proj.array());
@@ -9667,8 +9669,8 @@
           vertexAttribPointer("vertex2d", programObject2D, "Vertex", 3, boxOutlineBuffer);
           disableVertexAttribPointer("aTextureCoord2d", programObject2D, "aTextureCoord");
 
-          curContext.lineWidth(lineWidth);
-          curContext.drawArrays(curContext.LINES, 0, boxOutlineVerts.length / 3);
+          p.curContext.lineWidth(lineWidth);
+          p.curContext.drawArrays(p.curContext.LINES, 0, boxOutlineVerts.length / 3);
         }
       }
     };
@@ -9746,8 +9748,8 @@
       sphereVerts.push(0);
 
       //set the buffer data
-      curContext.bindBuffer(curContext.ARRAY_BUFFER, sphereBuffer);
-      curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array(sphereVerts), curContext.STATIC_DRAW);
+      p.curContext.bindBuffer(p.curContext.ARRAY_BUFFER, sphereBuffer);
+      p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array(sphereVerts), p.curContext.STATIC_DRAW);
     };
 
     /**
@@ -9873,7 +9875,7 @@
           normalMatrix.invert();
           normalMatrix.transpose();
 
-          curContext.useProgram(programObject3D);
+          p.curContext.useProgram(programObject3D);
           disableVertexAttribPointer("aTexture3d", programObject3D, "aTexture");
 
           uniformMatrix("model3d", programObject3D, "model", false, model.array());
@@ -9892,17 +9894,17 @@
           // since they share the same depth values). This is not entirely
           // working, but it's a start for drawing the outline. So
           // developers can start playing around with styles.
-          curContext.enable(curContext.POLYGON_OFFSET_FILL);
-          curContext.polygonOffset(1, 1);
+          p.curContext.enable(p.curContext.POLYGON_OFFSET_FILL);
+          p.curContext.polygonOffset(1, 1);
 
           uniformf("color3d", programObject3D, "color", fillStyle);
 
-          curContext.drawArrays(curContext.TRIANGLE_STRIP, 0, sphereVerts.length / 3);
-          curContext.disable(curContext.POLYGON_OFFSET_FILL);
+          p.curContext.drawArrays(p.curContext.TRIANGLE_STRIP, 0, sphereVerts.length / 3);
+          p.curContext.disable(p.curContext.POLYGON_OFFSET_FILL);
         }
 
         if (lineWidth > 0 && doStroke) {
-          curContext.useProgram(programObject2D);
+          p.curContext.useProgram(programObject2D);
           uniformMatrix("model2d", programObject2D, "model", false, model.array());
           uniformMatrix("view2d", programObject2D, "view", false, view.array());
           uniformMatrix("projection2d", programObject2D, "projection", false, proj.array());
@@ -9913,8 +9915,8 @@
           uniformf("color2d", programObject2D, "color", strokeStyle);
           uniformi("picktype2d", programObject2D, "picktype", 0);
 
-          curContext.lineWidth(lineWidth);
-          curContext.drawArrays(curContext.LINE_STRIP, 0, sphereVerts.length / 3);
+          p.curContext.lineWidth(lineWidth);
+          p.curContext.drawArrays(p.curContext.LINE_STRIP, 0, sphereVerts.length / 3);
         }
       }
     };
@@ -10045,7 +10047,7 @@
 
       // either a shade of gray or a 'color' object.
       if (p.use3DContext) {
-        curContext.useProgram(programObject3D);
+        p.curContext.useProgram(programObject3D);
         uniformi("usingMat3d", programObject3D, "usingMat", true);
 
         if (a.length === 1) {
@@ -10095,7 +10097,7 @@
       var a = arguments;
 
       if (p.use3DContext) {
-        curContext.useProgram(programObject3D);
+        p.curContext.useProgram(programObject3D);
         uniformi("usingMat3d", programObject3D, "usingMat", true);
 
         // If only one argument was provided, the user either gave us a
@@ -10129,7 +10131,7 @@
     */
     p.shininess = function shininess(shine) {
       if (p.use3DContext) {
-        curContext.useProgram(programObject3D);
+        p.curContext.useProgram(programObject3D);
         uniformi("usingMat3d", programObject3D, "usingMat", true);
         uniformf("shininess3d", programObject3D, "shininess", shine);
       }
@@ -10175,7 +10177,7 @@
       var c = p.color.apply(this, arguments);
 
       if (p.use3DContext) {
-        curContext.useProgram(programObject3D);
+        p.curContext.useProgram(programObject3D);
         uniformi("usingMat3d", programObject3D, "usingMat", true);
         uniformf("mat_specular3d", programObject3D, "mat_specular", p.color.toGLArray(c).slice(0, 3));
       }
@@ -10316,17 +10318,17 @@
       if (p.use3DContext) {
         fillStyle = p.color.toGLArray(color);
       } else {
-        isFillDirty = true;
+        p.isFillDirty = true;
       }
     };
 
-    function executeContextFill() {
+    p.executeContextFill = function executeContextFill() {
       if(doFill) {
-        if(isFillDirty) {
-          curContext.fillStyle = p.color.toString(currentFillColor);
-          isFillDirty = false;
+        if(p.isFillDirty) {
+          p.curContext.fillStyle = p.color.toString(currentFillColor);
+          p.isFillDirty = false;
         }
-        curContext.fill();
+        p.curContext.fill();
       }
     }
 
@@ -10382,17 +10384,17 @@
       if (p.use3DContext) {
         strokeStyle = p.color.toGLArray(color);
       } else {
-        isStrokeDirty = true;
+        p.isStrokeDirty = true;
       }
     };
 
-    function executeContextStroke() {
+    p.executeContextStroke = function executeContextStroke() {
       if(doStroke) {
-        if(isStrokeDirty) {
-          curContext.strokeStyle = p.color.toString(currentStrokeColor);
-          isStrokeDirty = false;
+        if(p.isStrokeDirty) {
+          p.curContext.strokeStyle = p.color.toString(currentStrokeColor);
+          p.isStrokeDirty = false;
         }
-        curContext.stroke();
+        p.curContext.stroke();
       }
     }
 
@@ -10416,10 +10418,10 @@
       lineWidth = w;
 
       if (p.use3DContext) {
-        curContext.useProgram(programObject2D);
+        p.curContext.useProgram(programObject2D);
         uniformf("pointSize2d", programObject2D, "pointSize", w);
       } else {
-        curContext.lineWidth = w;
+        p.curContext.lineWidth = w;
       }
     };
 
@@ -10431,7 +10433,7 @@
      * @param {int} value Either SQUARE, PROJECT, or ROUND
      */
     p.strokeCap = function strokeCap(value) {
-      curContext.lineCap = value;
+      p.curContext.lineCap = value;
     };
 
     /**
@@ -10442,7 +10444,7 @@
      * @param {int} value Either SQUARE, PROJECT, or ROUND
      */
     p.strokeJoin = function strokeJoin(value) {
-      curContext.lineJoin = value;
+      p.curContext.lineJoin = value;
     };
 
     /**
@@ -10456,8 +10458,8 @@
      */
     p.smooth = function() {
       curElement.style.setProperty("image-rendering", "optimizeQuality", "important");
-      if (!p.use3DContext && "mozImageSmoothingEnabled" in curContext) {
-        curContext.mozImageSmoothingEnabled = true;
+      if (!p.use3DContext && "mozImageSmoothingEnabled" in p.curContext) {
+        p.curContext.mozImageSmoothingEnabled = true;
       }
     };
 
@@ -10468,8 +10470,8 @@
      */
     p.noSmooth = function() {
       curElement.style.setProperty("image-rendering", "optimizeSpeed", "important");
-      if (!p.use3DContext && "mozImageSmoothingEnabled" in curContext) {
-        curContext.mozImageSmoothingEnabled = false;
+      if (!p.use3DContext && "mozImageSmoothingEnabled" in p.curContext) {
+        p.curContext.mozImageSmoothingEnabled = false;
       }
     };
 
@@ -10516,7 +10518,7 @@
         proj.set(projection);
         proj.transpose();
 
-        curContext.useProgram(programObject2D);
+        p.curContext.useProgram(programObject2D);
         uniformMatrix("model2d", programObject2D, "model", false, model.array());
         uniformMatrix("view2d", programObject2D, "view", false, view.array());
         uniformMatrix("projection2d", programObject2D, "projection", false, proj.array());
@@ -10529,7 +10531,7 @@
           vertexAttribPointer("vertex2d", programObject2D, "Vertex", 3, pointBuffer);
           disableVertexAttribPointer("aTextureCoord2d", programObject2D, "aTextureCoord");
 
-          curContext.drawArrays(curContext.POINTS, 0, 1);
+          p.curContext.drawArrays(p.curContext.POINTS, 0, 1);
         }
       } else {
         if (doStroke) {
@@ -10541,16 +10543,16 @@
             p.set(x, y, colorBlendWithAlpha(c, currentStrokeColor, alphaOfPointWeight));
           } else {
             if (lineWidth > 1){
-              curContext.fillStyle = p.color.toString(currentStrokeColor);
-              isFillDirty = true;
-              curContext.beginPath();
-              curContext.arc(x, y, lineWidth / 2, 0, PConstants.TWO_PI, false);
-              curContext.fill();
-              curContext.closePath();
+              p.curContext.fillStyle = p.color.toString(currentStrokeColor);
+              p.isFillDirty = true;
+              p.curContext.beginPath();
+              p.curContext.arc(x, y, lineWidth / 2, 0, PConstants.TWO_PI, false);
+              p.curContext.fill();
+              p.curContext.closePath();
             } else {
-              curContext.fillStyle = p.color.toString(currentStrokeColor);
-              curContext.fillRect(Math.round(x), Math.round(y), 1, 1);
-              isFillDirty = true;
+              p.curContext.fillStyle = p.color.toString(currentStrokeColor);
+              p.curContext.fillRect(Math.round(x), Math.round(y), 1, 1);
+              p.isFillDirty = true;
             }
           }
         }
@@ -10577,7 +10579,7 @@
     p.beginShape = function beginShape(type) {
       curShape = type;
       curvePoints = [];
-      vertArray = [];
+      p.vertArray = [];
     };
 
     /**
@@ -10605,7 +10607,7 @@
     p.vertex = function vertex() {
       var vert = [];
 
-      if (firstVert) { firstVert = false; }
+      if (p.firstVert) { p.firstVert = false; }
 
       if (arguments.length === 4) { //x, y, u, v
         vert[0] = arguments[0];
@@ -10644,7 +10646,7 @@
         vert[6] = currentStrokeColor;
       }
 
-      vertArray.push(vert);
+      p.vertArray.push(vert);
     };
 
     /**
@@ -10668,17 +10670,17 @@
       proj.set(projection);
       proj.transpose();
 
-      curContext.useProgram(programObjectUnlitShape);
+      p.curContext.useProgram(programObjectUnlitShape);
       uniformMatrix("uViewUS", programObjectUnlitShape, "uView", false, view.array());
       uniformMatrix("uProjectionUS", programObjectUnlitShape, "uProjection", false, proj.array());
 
       vertexAttribPointer("aVertexUS", programObjectUnlitShape, "aVertex", 3, pointBuffer);
-      curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array(vArray), curContext.STREAM_DRAW);
+      p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array(vArray), p.curContext.STREAM_DRAW);
 
       vertexAttribPointer("aColorUS", programObjectUnlitShape, "aColor", 4, fillColorBuffer);
-      curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array(cArray), curContext.STREAM_DRAW);
+      p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array(cArray), p.curContext.STREAM_DRAW);
 
-      curContext.drawArrays(curContext.POINTS, 0, vArray.length/3);
+      p.curContext.drawArrays(p.curContext.POINTS, 0, vArray.length/3);
     };
 
     /**
@@ -10696,13 +10698,13 @@
     var line3D = function line3D(vArray, mode, cArray){
       var ctxMode;
       if (mode === "LINES"){
-        ctxMode = curContext.LINES;
+        ctxMode = p.curContext.LINES;
       }
       else if(mode === "LINE_LOOP"){
-        ctxMode = curContext.LINE_LOOP;
+        ctxMode = p.curContext.LINE_LOOP;
       }
       else{
-        ctxMode = curContext.LINE_STRIP;
+        ctxMode = p.curContext.LINE_STRIP;
       }
 
       var view = new PMatrix3D();
@@ -10714,19 +10716,19 @@
       proj.set(projection);
       proj.transpose();
 
-      curContext.useProgram(programObjectUnlitShape);
+      p.curContext.useProgram(programObjectUnlitShape);
       uniformMatrix("uViewUS", programObjectUnlitShape, "uView", false, view.array());
       uniformMatrix("uProjectionUS", programObjectUnlitShape, "uProjection", false, proj.array());
 
       vertexAttribPointer("aVertexUS", programObjectUnlitShape, "aVertex", 3, lineBuffer);
-      curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array(vArray), curContext.STREAM_DRAW);
+      p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array(vArray), p.curContext.STREAM_DRAW);
 
       vertexAttribPointer("aColorUS", programObjectUnlitShape, "aColor", 4, strokeColorBuffer);
-      curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array(cArray), curContext.STREAM_DRAW);
+      p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array(cArray), p.curContext.STREAM_DRAW);
 
-      curContext.lineWidth(lineWidth);
+      p.curContext.lineWidth(lineWidth);
 
-      curContext.drawArrays(ctxMode, 0, vArray.length/3);
+      p.curContext.drawArrays(ctxMode, 0, vArray.length/3);
     };
 
     /**
@@ -10745,13 +10747,13 @@
     var fill3D = function fill3D(vArray, mode, cArray, tArray){
       var ctxMode;
       if(mode === "TRIANGLES"){
-        ctxMode = curContext.TRIANGLES;
+        ctxMode = p.curContext.TRIANGLES;
       }
       else if(mode === "TRIANGLE_FAN"){
-        ctxMode = curContext.TRIANGLE_FAN;
+        ctxMode = p.curContext.TRIANGLE_FAN;
       }
       else{
-        ctxMode = curContext.TRIANGLE_STRIP;
+        ctxMode = p.curContext.TRIANGLE_STRIP;
       }
 
       var view = new PMatrix3D();
@@ -10763,21 +10765,21 @@
       proj.set(projection);
       proj.transpose();
 
-      curContext.useProgram( programObject3D );
+      p.curContext.useProgram( programObject3D );
       uniformMatrix("model3d", programObject3D, "model", false,  [1,0,0,0,  0,1,0,0,   0,0,1,0,   0,0,0,1] );
       uniformMatrix("view3d", programObject3D, "view", false, view.array() );
       uniformMatrix("projection3d", programObject3D, "projection", false, proj.array() );
 
-      curContext.enable( curContext.POLYGON_OFFSET_FILL );
-      curContext.polygonOffset( 1, 1 );
+      p.curContext.enable( p.curContext.POLYGON_OFFSET_FILL );
+      p.curContext.polygonOffset( 1, 1 );
 
       uniformf("color3d", programObject3D, "color", [-1,0,0,0]);
 
       vertexAttribPointer("vertex3d", programObject3D, "Vertex", 3, fillBuffer);
-      curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array(vArray), curContext.STREAM_DRAW);
+      p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array(vArray), p.curContext.STREAM_DRAW);
 
       vertexAttribPointer("aColor3d", programObject3D, "aColor", 4, fillColorBuffer);
-      curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array(cArray), curContext.STREAM_DRAW);
+      p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array(cArray), p.curContext.STREAM_DRAW);
 
       // No support for lights....yet
       disableVertexAttribPointer("normal3d", programObject3D, "Normal");
@@ -10801,11 +10803,11 @@
 
         uniformi("usingTexture3d", programObject3D, "usingTexture", usingTexture);
         vertexAttribPointer("aTexture3d", programObject3D, "aTexture", 2, shapeTexVBO);
-        curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array(tArray), curContext.STREAM_DRAW);
+        p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array(tArray), p.curContext.STREAM_DRAW);
       }
 
-      curContext.drawArrays( ctxMode, 0, vArray.length/3 );
-      curContext.disable( curContext.POLYGON_OFFSET_FILL );
+      p.curContext.drawArrays( ctxMode, 0, vArray.length/3 );
+      p.curContext.disable( p.curContext.POLYGON_OFFSET_FILL );
     };
 
     /**
@@ -10825,58 +10827,58 @@
       var strokeVertArray = [];
       var texVertArray = [];
 
-      firstVert = true;
+      p.firstVert = true;
       var i, j, k;
-      var last = vertArray.length - 1;
+      var last = p.vertArray.length - 1;
 
-      for (i = 0; i < vertArray.length; i++) {
+      for (i = 0; i < p.vertArray.length; i++) {
         for (j = 0; j < 3; j++) {
-          fillVertArray.push(vertArray[i][j]);
+          fillVertArray.push(p.vertArray[i][j]);
         }
       }
 
       // 5,6,7,8
       // R,G,B,A - fill colour
-      for (i = 0; i < vertArray.length; i++) {
+      for (i = 0; i < p.vertArray.length; i++) {
         for (j = 5; j < 9; j++) {
-          colorVertArray.push(vertArray[i][j]);
+          colorVertArray.push(p.vertArray[i][j]);
         }
       }
 
       // 9,10,11,12
       // R, G, B, A - stroke colour
-      for (i = 0; i < vertArray.length; i++) {
+      for (i = 0; i < p.vertArray.length; i++) {
         for (j = 9; j < 13; j++) {
-          strokeVertArray.push(vertArray[i][j]);
+          strokeVertArray.push(p.vertArray[i][j]);
         }
       }
 
       // texture u,v
-      for (i = 0; i < vertArray.length; i++) {
-        texVertArray.push(vertArray[i][3]);
-        texVertArray.push(vertArray[i][4]);
+      for (i = 0; i < p.vertArray.length; i++) {
+        texVertArray.push(p.vertArray[i][3]);
+        texVertArray.push(p.vertArray[i][4]);
       }
 
       // if shape is closed, push the first point into the last point (including colours)
       if (closeShape) {
-        fillVertArray.push(vertArray[0][0]);
-        fillVertArray.push(vertArray[0][1]);
-        fillVertArray.push(vertArray[0][2]);
+        fillVertArray.push(p.vertArray[0][0]);
+        fillVertArray.push(p.vertArray[0][1]);
+        fillVertArray.push(p.vertArray[0][2]);
 
         for (i = 5; i < 9; i++) {
-          colorVertArray.push(vertArray[0][i]);
+          colorVertArray.push(p.vertArray[0][i]);
         }
 
        for (i = 9; i < 13; i++) {
-          strokeVertArray.push(vertArray[0][i]);
+          strokeVertArray.push(p.vertArray[0][i]);
         }
 
-        texVertArray.push(vertArray[0][3]);
-        texVertArray.push(vertArray[0][4]);
+        texVertArray.push(p.vertArray[0][3]);
+        texVertArray.push(p.vertArray[0][4]);
       }
 
       // curveVertex
-      if (isCurve && curShape === PConstants.POLYGON || isCurve && curShape === undef) {
+      if (p.isCurve && curShape === PConstants.POLYGON || p.isCurve && curShape === undef) {
         if (p.use3DContext) {
           lineVertArray = fillVertArray;
           if (doStroke) {
@@ -10886,11 +10888,11 @@
             fill3D(fillVertArray, null, colorVertArray); // fill isn't working in 3d curveVertex
           }
         } else {
-          if (vertArray.length > 3) {
+          if (p.vertArray.length > 3) {
             var b = [],
                 s = 1 - curTightness;
-            curContext.beginPath();
-            curContext.moveTo(vertArray[1][0], vertArray[1][1]);
+            p.curContext.beginPath();
+            p.curContext.moveTo(p.vertArray[1][0], p.vertArray[1][1]);
               /*
               * Matrix to convert from Catmull-Rom to cubic Bezier
               * where t = curTightness
@@ -10899,27 +10901,27 @@
               * |0         (1-t)/6    1         (t-1)/6 |
               * |0         0          0         0       |
               */
-            for (i = 1; (i+2) < vertArray.length; i++) {
-              b[0] = [vertArray[i][0], vertArray[i][1]];
-              b[1] = [vertArray[i][0] + (s * vertArray[i+1][0] - s * vertArray[i-1][0]) / 6,
-                     vertArray[i][1] + (s * vertArray[i+1][1] - s * vertArray[i-1][1]) / 6];
-              b[2] = [vertArray[i+1][0] + (s * vertArray[i][0] - s * vertArray[i+2][0]) / 6,
-                     vertArray[i+1][1] + (s * vertArray[i][1] - s * vertArray[i+2][1]) / 6];
-              b[3] = [vertArray[i+1][0], vertArray[i+1][1]];
-              curContext.bezierCurveTo(b[1][0], b[1][1], b[2][0], b[2][1], b[3][0], b[3][1]);
+            for (i = 1; (i+2) < p.vertArray.length; i++) {
+              b[0] = [p.vertArray[i][0], p.vertArray[i][1]];
+              b[1] = [p.vertArray[i][0] + (s * p.vertArray[i+1][0] - s * p.vertArray[i-1][0]) / 6,
+                     p.vertArray[i][1] + (s * p.vertArray[i+1][1] - s * p.vertArray[i-1][1]) / 6];
+              b[2] = [p.vertArray[i+1][0] + (s * p.vertArray[i][0] - s * p.vertArray[i+2][0]) / 6,
+                     p.vertArray[i+1][1] + (s * p.vertArray[i][1] - s * p.vertArray[i+2][1]) / 6];
+              b[3] = [p.vertArray[i+1][0], p.vertArray[i+1][1]];
+              p.curContext.bezierCurveTo(b[1][0], b[1][1], b[2][0], b[2][1], b[3][0], b[3][1]);
             }
             // close the shape
             if (closeShape) {
-              curContext.lineTo(vertArray[0][0], vertArray[0][1]);
+              p.curContext.lineTo(p.vertArray[0][0], p.vertArray[0][1]);
             }
-            executeContextFill();
-            executeContextStroke();
-            curContext.closePath();
+            p.executeContextFill();
+            p.executeContextStroke();
+            p.curContext.closePath();
           }
         }
       }
       // bezierVertex
-      else if (isBezier && curShape === PConstants.POLYGON || isBezier && curShape === undef) {
+      else if (p.isBezier && curShape === PConstants.POLYGON || p.isBezier && curShape === undef) {
         if (p.use3DContext) {
           lineVertArray = fillVertArray;
           lineVertArray.splice(lineVertArray.length - 3);
@@ -10943,16 +10945,16 @@
               colorVertArray.push(tempArray[i][j]);
             }
             for(j = 0; j < 3; j++){
-              fillVertArray.push(vertArray[i][j]);
+              fillVertArray.push(p.vertArray[i][j]);
             }
             for(j = 5; j < 9; j++){
-              colorVertArray.push(vertArray[i][j]);
+              colorVertArray.push(p.vertArray[i][j]);
             }
             for(j = 0; j < 3; j++){
-              fillVertArray.push(vertArray[i+1][j]);
+              fillVertArray.push(p.vertArray[i+1][j]);
             }
             for(j = 5; j < 9; j++){
-              colorVertArray.push(vertArray[i][j]);
+              colorVertArray.push(p.vertArray[i][j]);
             }
           }
 
@@ -10965,52 +10967,52 @@
           }
           point3D(tempArray, strokeVertArray);*/
         } else {
-          curContext.beginPath();
-          for (i = 0; i < vertArray.length; i++) {
-            if (vertArray[i]["isVert"] === true) { //if it is a vertex move to the position
-              if (vertArray[i]["moveTo"] === true) {
-                curContext.moveTo(vertArray[i][0], vertArray[i][1]);
-              } else if (vertArray[i]["moveTo"] === false){
-                curContext.lineTo(vertArray[i][0], vertArray[i][1]);
+          p.curContext.beginPath();
+          for (i = 0; i < p.vertArray.length; i++) {
+            if (p.vertArray[i]["isVert"] === true) { //if it is a vertex move to the position
+              if (p.vertArray[i]["moveTo"] === true) {
+                p.curContext.moveTo(p.vertArray[i][0], p.vertArray[i][1]);
+              } else if (p.vertArray[i]["moveTo"] === false){
+                p.curContext.lineTo(p.vertArray[i][0], p.vertArray[i][1]);
               } else {
-                curContext.moveTo(vertArray[i][0], vertArray[i][1]);
+                p.curContext.moveTo(p.vertArray[i][0], p.vertArray[i][1]);
               }
             } else { //otherwise continue drawing bezier
-              curContext.bezierCurveTo(vertArray[i][0], vertArray[i][1], vertArray[i][2], vertArray[i][3], vertArray[i][4], vertArray[i][5]);
+              p.curContext.bezierCurveTo(p.vertArray[i][0], p.vertArray[i][1], p.vertArray[i][2], p.vertArray[i][3], p.vertArray[i][4], p.vertArray[i][5]);
             }
           }
           // close the shape
           if (closeShape) {
-            curContext.lineTo(vertArray[0][0], vertArray[0][1]);
+            p.curContext.lineTo(p.vertArray[0][0], p.vertArray[0][1]);
           }
-          executeContextFill();
-          executeContextStroke();
-          curContext.closePath();
+          p.executeContextFill();
+          p.executeContextStroke();
+          p.curContext.closePath();
         }
       } else {  // render the vertices provided
         if (p.use3DContext) { // in 3D context
           if (curShape === PConstants.POINTS) {       // if POINTS was the specified parameter in beginShape
-            for (i = 0; i < vertArray.length; i++) {  // loop through and push the point location information to the array
+            for (i = 0; i < p.vertArray.length; i++) {  // loop through and push the point location information to the array
               for (j = 0; j < 3; j++) {
-                lineVertArray.push(vertArray[i][j]);
+                lineVertArray.push(p.vertArray[i][j]);
               }
             }
             point3D(lineVertArray, strokeVertArray);  // render function for points
           } else if (curShape === PConstants.LINES) { // if LINES was the specified parameter in beginShape
-            for (i = 0; i < vertArray.length; i++) {  // loop through and push the point location information to the array
+            for (i = 0; i < p.vertArray.length; i++) {  // loop through and push the point location information to the array
               for (j = 0; j < 3; j++) {
-                lineVertArray.push(vertArray[i][j]);
+                lineVertArray.push(p.vertArray[i][j]);
               }
             }
-            for (i = 0; i < vertArray.length; i++) {  // loop through and push the color information to the array
+            for (i = 0; i < p.vertArray.length; i++) {  // loop through and push the color information to the array
               for (j = 5; j < 9; j++) {
-                colorVertArray.push(vertArray[i][j]);
+                colorVertArray.push(p.vertArray[i][j]);
               }
             }
             line3D(lineVertArray, "LINES", strokeVertArray);  // render function for lines
           } else if (curShape === PConstants.TRIANGLES) {     // if TRIANGLES was the specified parameter in beginShape
-            if (vertArray.length > 2) {
-              for (i = 0; (i+2) < vertArray.length; i+=3) {   // loop through the array per triangle
+            if (p.vertArray.length > 2) {
+              for (i = 0; (i+2) < p.vertArray.length; i+=3) {   // loop through the array per triangle
                 fillVertArray = [];
                 texVertArray = [];
                 lineVertArray = [];
@@ -11018,19 +11020,19 @@
                 strokeVertArray = [];
                 for (j = 0; j < 3; j++) {
                   for (k = 0; k < 3; k++) {                   // loop through and push
-                    lineVertArray.push(vertArray[i+j][k]);    // the line point location information
-                    fillVertArray.push(vertArray[i+j][k]);    // and fill point location information
+                    lineVertArray.push(p.vertArray[i+j][k]);    // the line point location information
+                    fillVertArray.push(p.vertArray[i+j][k]);    // and fill point location information
                   }
                 }
                 for (j = 0; j < 3; j++) {                     // loop through and push the texture information
                   for (k = 3; k < 5; k++) {
-                    texVertArray.push(vertArray[i+j][k]);
+                    texVertArray.push(p.vertArray[i+j][k]);
                   }
                 }
                 for (j = 0; j < 3; j++) {
                   for (k = 5; k < 9; k++) {                   // loop through and push
-                    colorVertArray.push(vertArray[i+j][k]);   // the colour information
-                    strokeVertArray.push(vertArray[i+j][k+4]);// and the stroke information
+                    colorVertArray.push(p.vertArray[i+j][k]);   // the colour information
+                    strokeVertArray.push(p.vertArray[i+j][k+4]);// and the stroke information
                   }
                 }
                 if (doStroke) {
@@ -11042,8 +11044,8 @@
               }
             }
           } else if (curShape === PConstants.TRIANGLE_STRIP) {    // if TRIANGLE_STRIP was the specified parameter in beginShape
-            if (vertArray.length > 2) {
-              for (i = 0; (i+2) < vertArray.length; i++) {
+            if (p.vertArray.length > 2) {
+              for (i = 0; (i+2) < p.vertArray.length; i++) {
                 lineVertArray = [];
                 fillVertArray = [];
                 strokeVertArray = [];
@@ -11051,19 +11053,19 @@
                 texVertArray = [];
                 for (j = 0; j < 3; j++) {
                   for (k = 0; k < 3; k++) {
-                    lineVertArray.push(vertArray[i+j][k]);
-                    fillVertArray.push(vertArray[i+j][k]);
+                    lineVertArray.push(p.vertArray[i+j][k]);
+                    fillVertArray.push(p.vertArray[i+j][k]);
                   }
                 }
                 for (j = 0; j < 3; j++) {
                   for (k = 3; k < 5; k++) {
-                    texVertArray.push(vertArray[i+j][k]);
+                    texVertArray.push(p.vertArray[i+j][k]);
                   }
                 }
                 for (j = 0; j < 3; j++) {
                   for (k = 5; k < 9; k++) {
-                    strokeVertArray.push(vertArray[i+j][k+4]);
-                    colorVertArray.push(vertArray[i+j][k]);
+                    strokeVertArray.push(p.vertArray[i+j][k+4]);
+                    colorVertArray.push(p.vertArray[i+j][k]);
                   }
                 }
 
@@ -11076,41 +11078,41 @@
               }
             }
           } else if (curShape === PConstants.TRIANGLE_FAN) {
-            if (vertArray.length > 2) {
+            if (p.vertArray.length > 2) {
               for (i = 0; i < 3; i++) {
                 for (j = 0; j < 3; j++) {
-                  lineVertArray.push(vertArray[i][j]);
+                  lineVertArray.push(p.vertArray[i][j]);
                 }
               }
               for (i = 0; i < 3; i++) {
                 for (j = 9; j < 13; j++) {
-                  strokeVertArray.push(vertArray[i][j]);
+                  strokeVertArray.push(p.vertArray[i][j]);
                 }
               }
               if (doStroke) {
                 line3D(lineVertArray, "LINE_LOOP", strokeVertArray);
               }
 
-              for (i = 2; (i+1) < vertArray.length; i++) {
+              for (i = 2; (i+1) < p.vertArray.length; i++) {
                 lineVertArray = [];
                 strokeVertArray = [];
-                lineVertArray.push(vertArray[0][0]);
-                lineVertArray.push(vertArray[0][1]);
-                lineVertArray.push(vertArray[0][2]);
+                lineVertArray.push(p.vertArray[0][0]);
+                lineVertArray.push(p.vertArray[0][1]);
+                lineVertArray.push(p.vertArray[0][2]);
 
-                strokeVertArray.push(vertArray[0][9]);
-                strokeVertArray.push(vertArray[0][10]);
-                strokeVertArray.push(vertArray[0][11]);
-                strokeVertArray.push(vertArray[0][12]);
+                strokeVertArray.push(p.vertArray[0][9]);
+                strokeVertArray.push(p.vertArray[0][10]);
+                strokeVertArray.push(p.vertArray[0][11]);
+                strokeVertArray.push(p.vertArray[0][12]);
 
                 for (j = 0; j < 2; j++) {
                   for (k = 0; k < 3; k++) {
-                    lineVertArray.push(vertArray[i+j][k]);
+                    lineVertArray.push(p.vertArray[i+j][k]);
                   }
                 }
                 for (j = 0; j < 2; j++) {
                   for (k = 9; k < 13; k++) {
-                    strokeVertArray.push(vertArray[i+j][k]);
+                    strokeVertArray.push(p.vertArray[i+j][k]);
                   }
                 }
                 if (doStroke) {
@@ -11122,11 +11124,11 @@
               }
             }
           } else if (curShape === PConstants.QUADS) {
-            for (i = 0; (i + 3) < vertArray.length; i+=4) {
+            for (i = 0; (i + 3) < p.vertArray.length; i+=4) {
               lineVertArray = [];
               for (j = 0; j < 4; j++) {
                 for (k = 0; k < 3; k++) {
-                  lineVertArray.push(vertArray[i+j][k]);
+                  lineVertArray.push(p.vertArray[i+j][k]);
                 }
               }
               if (doStroke) {
@@ -11138,42 +11140,42 @@
                 colorVertArray = [];
                 texVertArray = [];
                 for (j = 0; j < 3; j++) {
-                  fillVertArray.push(vertArray[i][j]);
+                  fillVertArray.push(p.vertArray[i][j]);
                 }
                 for (j = 5; j < 9; j++) {
-                  colorVertArray.push(vertArray[i][j]);
+                  colorVertArray.push(p.vertArray[i][j]);
                 }
 
                 for (j = 0; j < 3; j++) {
-                  fillVertArray.push(vertArray[i+1][j]);
+                  fillVertArray.push(p.vertArray[i+1][j]);
                 }
                 for (j = 5; j < 9; j++) {
-                  colorVertArray.push(vertArray[i+1][j]);
+                  colorVertArray.push(p.vertArray[i+1][j]);
                 }
 
                 for (j = 0; j < 3; j++) {
-                  fillVertArray.push(vertArray[i+3][j]);
+                  fillVertArray.push(p.vertArray[i+3][j]);
                 }
                 for (j = 5; j < 9; j++) {
-                  colorVertArray.push(vertArray[i+3][j]);
+                  colorVertArray.push(p.vertArray[i+3][j]);
                 }
 
                 for (j = 0; j < 3; j++) {
-                  fillVertArray.push(vertArray[i+2][j]);
+                  fillVertArray.push(p.vertArray[i+2][j]);
                 }
                 for (j = 5; j < 9; j++) {
-                  colorVertArray.push(vertArray[i+2][j]);
+                  colorVertArray.push(p.vertArray[i+2][j]);
                 }
 
                 if (usingTexture) {
-                  texVertArray.push(vertArray[i+0][3]);
-                  texVertArray.push(vertArray[i+0][4]);
-                  texVertArray.push(vertArray[i+1][3]);
-                  texVertArray.push(vertArray[i+1][4]);
-                  texVertArray.push(vertArray[i+3][3]);
-                  texVertArray.push(vertArray[i+3][4]);
-                  texVertArray.push(vertArray[i+2][3]);
-                  texVertArray.push(vertArray[i+2][4]);
+                  texVertArray.push(p.vertArray[i+0][3]);
+                  texVertArray.push(p.vertArray[i+0][4]);
+                  texVertArray.push(p.vertArray[i+1][3]);
+                  texVertArray.push(p.vertArray[i+1][4]);
+                  texVertArray.push(p.vertArray[i+3][3]);
+                  texVertArray.push(p.vertArray[i+3][4]);
+                  texVertArray.push(p.vertArray[i+2][3]);
+                  texVertArray.push(p.vertArray[i+2][4]);
                 }
 
                 fill3D(fillVertArray, "TRIANGLE_STRIP", colorVertArray, texVertArray);
@@ -11181,50 +11183,50 @@
             }
           } else if (curShape === PConstants.QUAD_STRIP) {
             var tempArray = [];
-            if (vertArray.length > 3) {
+            if (p.vertArray.length > 3) {
               for (i = 0; i < 2; i++) {
                 for (j = 0; j < 3; j++) {
-                  lineVertArray.push(vertArray[i][j]);
+                  lineVertArray.push(p.vertArray[i][j]);
                 }
               }
 
               for (i = 0; i < 2; i++) {
                 for (j = 9; j < 13; j++) {
-                  strokeVertArray.push(vertArray[i][j]);
+                  strokeVertArray.push(p.vertArray[i][j]);
                 }
               }
 
               line3D(lineVertArray, "LINE_STRIP", strokeVertArray);
-              if (vertArray.length > 4 && vertArray.length % 2 > 0) {
+              if (p.vertArray.length > 4 && p.vertArray.length % 2 > 0) {
                 tempArray = fillVertArray.splice(fillVertArray.length - 3);
-                vertArray.pop();
+                p.vertArray.pop();
               }
-              for (i = 0; (i+3) < vertArray.length; i+=2) {
+              for (i = 0; (i+3) < p.vertArray.length; i+=2) {
                 lineVertArray = [];
                 strokeVertArray = [];
                 for (j = 0; j < 3; j++) {
-                  lineVertArray.push(vertArray[i+1][j]);
+                  lineVertArray.push(p.vertArray[i+1][j]);
                 }
                 for (j = 0; j < 3; j++) {
-                  lineVertArray.push(vertArray[i+3][j]);
+                  lineVertArray.push(p.vertArray[i+3][j]);
                 }
                 for (j = 0; j < 3; j++) {
-                  lineVertArray.push(vertArray[i+2][j]);
+                  lineVertArray.push(p.vertArray[i+2][j]);
                 }
                 for (j = 0; j < 3; j++) {
-                  lineVertArray.push(vertArray[i+0][j]);
+                  lineVertArray.push(p.vertArray[i+0][j]);
                 }
                 for (j = 9; j < 13; j++) {
-                  strokeVertArray.push(vertArray[i+1][j]);
+                  strokeVertArray.push(p.vertArray[i+1][j]);
                 }
                 for (j = 9; j < 13; j++) {
-                  strokeVertArray.push(vertArray[i+3][j]);
+                  strokeVertArray.push(p.vertArray[i+3][j]);
                 }
                 for (j = 9; j < 13; j++) {
-                  strokeVertArray.push(vertArray[i+2][j]);
+                  strokeVertArray.push(p.vertArray[i+2][j]);
                 }
                 for (j = 9; j < 13; j++) {
-                  strokeVertArray.push(vertArray[i+0][j]);
+                  strokeVertArray.push(p.vertArray[i+0][j]);
                 }
                 if (doStroke) {
                   line3D(lineVertArray, "LINE_STRIP", strokeVertArray);
@@ -11239,21 +11241,21 @@
           // If the user didn't specify a type (LINES, TRIANGLES, etc)
           else {
             // If only one vertex was specified, it must be a point
-            if (vertArray.length === 1) {
+            if (p.vertArray.length === 1) {
               for (j = 0; j < 3; j++) {
-                lineVertArray.push(vertArray[0][j]);
+                lineVertArray.push(p.vertArray[0][j]);
               }
               for (j = 9; j < 13; j++) {
-                strokeVertArray.push(vertArray[0][j]);
+                strokeVertArray.push(p.vertArray[0][j]);
               }
               point3D(lineVertArray,strokeVertArray);
             } else {
-              for (i = 0; i < vertArray.length; i++) {
+              for (i = 0; i < p.vertArray.length; i++) {
                 for (j = 0; j < 3; j++) {
-                  lineVertArray.push(vertArray[i][j]);
+                  lineVertArray.push(p.vertArray[i][j]);
                 }
                 for (j = 5; j < 9; j++) {
-                  strokeVertArray.push(vertArray[i][j]);
+                  strokeVertArray.push(p.vertArray[i][j]);
                 }
               }
               if (closeShape) {
@@ -11273,178 +11275,178 @@
           // figure out if the shape should be textured or filled
           // with a color.
           usingTexture = false;
-          curContext.useProgram(programObject3D);
+          p.curContext.useProgram(programObject3D);
           uniformi("usingTexture3d", programObject3D, "usingTexture", usingTexture);
         }
 
         // 2D context
         else {
           if (curShape === PConstants.POINTS) {
-            for (i = 0; i < vertArray.length; i++) {
+            for (i = 0; i < p.vertArray.length; i++) {
               if (doStroke) {
-                p.stroke(vertArray[i][6]);
+                p.stroke(p.vertArray[i][6]);
               }
-              p.point(vertArray[i][0], vertArray[i][1]);
+              p.point(p.vertArray[i][0], p.vertArray[i][1]);
             }
           } else if (curShape === PConstants.LINES) {
-            for (i = 0; (i + 1) < vertArray.length; i+=2) {
+            for (i = 0; (i + 1) < p.vertArray.length; i+=2) {
               if (doStroke) {
-                p.stroke(vertArray[i+1][6]);
+                p.stroke(p.vertArray[i+1][6]);
               }
-              p.line(vertArray[i][0], vertArray[i][1], vertArray[i+1][0], vertArray[i+1][1]);
+              p.line(p.vertArray[i][0], p.vertArray[i][1], p.vertArray[i+1][0], p.vertArray[i+1][1]);
             }
           } else if (curShape === PConstants.TRIANGLES) {
-            for (i = 0; (i + 2) < vertArray.length; i+=3) {
-              curContext.beginPath();
-              curContext.moveTo(vertArray[i][0], vertArray[i][1]);
-              curContext.lineTo(vertArray[i+1][0], vertArray[i+1][1]);
-              curContext.lineTo(vertArray[i+2][0], vertArray[i+2][1]);
-              curContext.lineTo(vertArray[i][0], vertArray[i][1]);
+            for (i = 0; (i + 2) < p.vertArray.length; i+=3) {
+              p.curContext.beginPath();
+              p.curContext.moveTo(p.vertArray[i][0], p.vertArray[i][1]);
+              p.curContext.lineTo(p.vertArray[i+1][0], p.vertArray[i+1][1]);
+              p.curContext.lineTo(p.vertArray[i+2][0], p.vertArray[i+2][1]);
+              p.curContext.lineTo(p.vertArray[i][0], p.vertArray[i][1]);
 
               if (doFill) {
-                p.fill(vertArray[i+2][5]);
-                executeContextFill();
+                p.fill(p.vertArray[i+2][5]);
+                p.executeContextFill();
               }
               if (doStroke) {
-                p.stroke(vertArray[i+2][6]);
-                executeContextStroke();
+                p.stroke(p.vertArray[i+2][6]);
+                p.executeContextStroke();
               }
 
-              curContext.closePath();
+              p.curContext.closePath();
             }
           } else if (curShape === PConstants.TRIANGLE_STRIP) {
-            for (i = 0; (i+1) < vertArray.length; i++) {
-              curContext.beginPath();
-              curContext.moveTo(vertArray[i+1][0], vertArray[i+1][1]);
-              curContext.lineTo(vertArray[i][0], vertArray[i][1]);
+            for (i = 0; (i+1) < p.vertArray.length; i++) {
+              p.curContext.beginPath();
+              p.curContext.moveTo(p.vertArray[i+1][0], p.vertArray[i+1][1]);
+              p.curContext.lineTo(p.vertArray[i][0], p.vertArray[i][1]);
 
               if (doStroke) {
-                p.stroke(vertArray[i+1][6]);
+                p.stroke(p.vertArray[i+1][6]);
               }
               if (doFill) {
-                p.fill(vertArray[i+1][5]);
+                p.fill(p.vertArray[i+1][5]);
               }
 
-              if (i + 2 < vertArray.length) {
-                curContext.lineTo(vertArray[i+2][0], vertArray[i+2][1]);
+              if (i + 2 < p.vertArray.length) {
+                p.curContext.lineTo(p.vertArray[i+2][0], p.vertArray[i+2][1]);
                 if (doStroke) {
-                  p.stroke(vertArray[i+2][6]);
+                  p.stroke(p.vertArray[i+2][6]);
                 }
                 if (doFill) {
-                  p.fill(vertArray[i+2][5]);
+                  p.fill(p.vertArray[i+2][5]);
                 }
               }
-              executeContextFill();
-              executeContextStroke();
-              curContext.closePath();
+              p.executeContextFill();
+              p.executeContextStroke();
+              p.curContext.closePath();
             }
           } else if (curShape === PConstants.TRIANGLE_FAN) {
-            if (vertArray.length > 2) {
-              curContext.beginPath();
-              curContext.moveTo(vertArray[0][0], vertArray[0][1]);
-              curContext.lineTo(vertArray[1][0], vertArray[1][1]);
-              curContext.lineTo(vertArray[2][0], vertArray[2][1]);
+            if (p.vertArray.length > 2) {
+              p.curContext.beginPath();
+              p.curContext.moveTo(p.vertArray[0][0], p.vertArray[0][1]);
+              p.curContext.lineTo(p.vertArray[1][0], p.vertArray[1][1]);
+              p.curContext.lineTo(p.vertArray[2][0], p.vertArray[2][1]);
 
               if (doFill) {
-                p.fill(vertArray[2][5]);
-                executeContextFill();
+                p.fill(p.vertArray[2][5]);
+                p.executeContextFill();
               }
               if (doStroke) {
-                p.stroke(vertArray[2][6]);
-                executeContextStroke();
+                p.stroke(p.vertArray[2][6]);
+                p.executeContextStroke();
               }
 
-              curContext.closePath();
-              for (i = 3; i < vertArray.length; i++) {
-                curContext.beginPath();
-                curContext.moveTo(vertArray[0][0], vertArray[0][1]);
-                curContext.lineTo(vertArray[i-1][0], vertArray[i-1][1]);
-                curContext.lineTo(vertArray[i][0], vertArray[i][1]);
+              p.curContext.closePath();
+              for (i = 3; i < p.vertArray.length; i++) {
+                p.curContext.beginPath();
+                p.curContext.moveTo(p.vertArray[0][0], p.vertArray[0][1]);
+                p.curContext.lineTo(p.vertArray[i-1][0], p.vertArray[i-1][1]);
+                p.curContext.lineTo(p.vertArray[i][0], p.vertArray[i][1]);
 
                 if (doFill) {
-                  p.fill(vertArray[i][5]);
-                  executeContextFill();
+                  p.fill(p.vertArray[i][5]);
+                  p.executeContextFill();
                 }
                 if (doStroke) {
-                  p.stroke(vertArray[i][6]);
-                  executeContextStroke();
+                  p.stroke(p.vertArray[i][6]);
+                  p.executeContextStroke();
                 }
 
-                curContext.closePath();
+                p.curContext.closePath();
               }
             }
           } else if (curShape === PConstants.QUADS) {
-            for (i = 0; (i + 3) < vertArray.length; i+=4) {
-              curContext.beginPath();
-              curContext.moveTo(vertArray[i][0], vertArray[i][1]);
+            for (i = 0; (i + 3) < p.vertArray.length; i+=4) {
+              p.curContext.beginPath();
+              p.curContext.moveTo(p.vertArray[i][0], p.vertArray[i][1]);
               for (j = 1; j < 4; j++) {
-                curContext.lineTo(vertArray[i+j][0], vertArray[i+j][1]);
+                p.curContext.lineTo(p.vertArray[i+j][0], p.vertArray[i+j][1]);
               }
-              curContext.lineTo(vertArray[i][0], vertArray[i][1]);
+              p.curContext.lineTo(p.vertArray[i][0], p.vertArray[i][1]);
 
               if (doFill) {
-                p.fill(vertArray[i+3][5]);
-                executeContextFill();
+                p.fill(p.vertArray[i+3][5]);
+                p.executeContextFill();
               }
               if (doStroke) {
-                p.stroke(vertArray[i+3][6]);
-                executeContextStroke();
+                p.stroke(p.vertArray[i+3][6]);
+                p.executeContextStroke();
               }
 
-              curContext.closePath();
+              p.curContext.closePath();
             }
           } else if (curShape === PConstants.QUAD_STRIP) {
-            if (vertArray.length > 3) {
-              for (i = 0; (i+1) < vertArray.length; i+=2) {
-                curContext.beginPath();
-                if (i+3 < vertArray.length) {
-                  curContext.moveTo(vertArray[i+2][0], vertArray[i+2][1]);
-                  curContext.lineTo(vertArray[i][0], vertArray[i][1]);
-                  curContext.lineTo(vertArray[i+1][0], vertArray[i+1][1]);
-                  curContext.lineTo(vertArray[i+3][0], vertArray[i+3][1]);
+            if (p.vertArray.length > 3) {
+              for (i = 0; (i+1) < p.vertArray.length; i+=2) {
+                p.curContext.beginPath();
+                if (i+3 < p.vertArray.length) {
+                  p.curContext.moveTo(p.vertArray[i+2][0], p.vertArray[i+2][1]);
+                  p.curContext.lineTo(p.vertArray[i][0], p.vertArray[i][1]);
+                  p.curContext.lineTo(p.vertArray[i+1][0], p.vertArray[i+1][1]);
+                  p.curContext.lineTo(p.vertArray[i+3][0], p.vertArray[i+3][1]);
 
                   if (doFill) {
-                    p.fill(vertArray[i+3][5]);
+                    p.fill(p.vertArray[i+3][5]);
                   }
                   if (doStroke) {
-                    p.stroke(vertArray[i+3][6]);
+                    p.stroke(p.vertArray[i+3][6]);
                   }
                 } else {
-                  curContext.moveTo(vertArray[i][0], vertArray[i][1]);
-                  curContext.lineTo(vertArray[i+1][0], vertArray[i+1][1]);
+                  p.curContext.moveTo(p.vertArray[i][0], p.vertArray[i][1]);
+                  p.curContext.lineTo(p.vertArray[i+1][0], p.vertArray[i+1][1]);
                 }
-                executeContextFill();
-                executeContextStroke();
-                curContext.closePath();
+                p.executeContextFill();
+                p.executeContextStroke();
+                p.curContext.closePath();
               }
             }
           } else {
-            curContext.beginPath();
-            curContext.moveTo(vertArray[0][0], vertArray[0][1]);
-            for (i = 1; i < vertArray.length; i++) {
-              if (vertArray[i]["isVert"] === true ) { //if it is a vertex move to the position
-                if (vertArray[i]["moveTo"] === true) {
-                  curContext.moveTo(vertArray[i][0], vertArray[i][1]);
-                } else if (vertArray[i]["moveTo"] === false){
-                  curContext.lineTo(vertArray[i][0], vertArray[i][1]);
+            p.curContext.beginPath();
+            p.curContext.moveTo(p.vertArray[0][0], p.vertArray[0][1]);
+            for (i = 1; i < p.vertArray.length; i++) {
+              if (p.vertArray[i]["isVert"] === true ) { //if it is a vertex move to the position
+                if (p.vertArray[i]["moveTo"] === true) {
+                  p.curContext.moveTo(p.vertArray[i][0], p.vertArray[i][1]);
+                } else if (p.vertArray[i]["moveTo"] === false){
+                  p.curContext.lineTo(p.vertArray[i][0], p.vertArray[i][1]);
                 } else {
-                  curContext.lineTo(vertArray[i][0], vertArray[i][1]);
+                  p.curContext.lineTo(p.vertArray[i][0], p.vertArray[i][1]);
                 }
               }
             }
             if (closeShape) {
-              curContext.lineTo(vertArray[0][0], vertArray[0][1]);
+              p.curContext.lineTo(p.vertArray[0][0], p.vertArray[0][1]);
             }
-            executeContextFill();
-            executeContextStroke();
-            curContext.closePath();
+            p.executeContextFill();
+            p.executeContextStroke();
+            p.curContext.closePath();
           }
         }
       }
-      isCurve = false;
-      isBezier = false;
+      p.isCurve = false;
+      p.isBezier = false;
       curveVertArray = [];
-      curveVertCount = 0;
+      p.curveVertCount = 0;
     };
 
     /**
@@ -11527,9 +11529,9 @@
      * @see bezier
      */
     p.bezierVertex = function bezierVertex() {
-      isBezier = true;
+      p.isBezier = true;
       var vert = [];
-      if (firstVert) {
+      if (p.firstVert) {
         throw ("vertex() must be used at least once before calling bezierVertex()");
       } else {
         if (arguments.length === 9) {
@@ -11568,8 +11570,8 @@
           for (var i = 0; i < arguments.length; i++) {
             vert[i] = arguments[i];
           }
-          vertArray.push(vert);
-          vertArray[vertArray.length -1]["isVert"] = false;
+          p.vertArray.push(vert);
+          p.vertArray[p.vertArray.length -1]["isVert"] = false;
         }
       }
     };
@@ -11580,13 +11582,13 @@
       var canvas2d = document.createElement('canvas');
 
       try { // new way.
-        curContext.texImage2D(curContext.TEXTURE_2D, 0, curContext.RGBA, curContext.RGBA, curContext.UNSIGNED_BYTE, canvas2d);
+        p.curContext.texImage2D(p.curContext.TEXTURE_2D, 0, p.curContext.RGBA, p.curContext.RGBA, p.curContext.UNSIGNED_BYTE, canvas2d);
         executeTexImage2D = function(texture) {
-          curContext.texImage2D(curContext.TEXTURE_2D, 0, curContext.RGBA, curContext.RGBA, curContext.UNSIGNED_BYTE, texture);
+          p.curContext.texImage2D(p.curContext.TEXTURE_2D, 0, p.curContext.RGBA, p.curContext.RGBA, p.curContext.UNSIGNED_BYTE, texture);
         };
       } catch (e) {
         executeTexImage2D = function(texture) {
-          curContext.texImage2D(curContext.TEXTURE_2D, 0, texture, false);
+          p.curContext.texImage2D(p.curContext.TEXTURE_2D, 0, texture, false);
         };
       }
 
@@ -11612,13 +11614,13 @@
     */
     p.texture = function(pimage) {
       if (pimage.localName === "canvas") {
-        curContext.bindTexture(curContext.TEXTURE_2D, canTex);
+        p.curContext.bindTexture(p.curContext.TEXTURE_2D, canTex);
         executeTexImage2D(pimage);
-        curContext.texParameteri(curContext.TEXTURE_2D, curContext.TEXTURE_MAG_FILTER, curContext.LINEAR);
-        curContext.texParameteri(curContext.TEXTURE_2D, curContext.TEXTURE_MIN_FILTER, curContext.LINEAR);
-        curContext.generateMipmap(curContext.TEXTURE_2D);
+        p.curContext.texParameteri(p.curContext.TEXTURE_2D, p.curContext.TEXTURE_MAG_FILTER, p.curContext.LINEAR);
+        p.curContext.texParameteri(p.curContext.TEXTURE_2D, p.curContext.TEXTURE_MIN_FILTER, p.curContext.LINEAR);
+        p.curContext.generateMipmap(p.curContext.TEXTURE_2D);
       } else if (!pimage.__texture) {
-        var texture = curContext.createTexture();
+        var texture = p.curContext.createTexture();
         pimage.__texture = texture;
 
         var cvs = document.createElement('canvas');
@@ -11664,21 +11666,21 @@
         ctx.putImageData(textureImage, 0, 0);
         pimage.__cvs = cvs;
 
-        curContext.bindTexture(curContext.TEXTURE_2D, pimage.__texture);
-        curContext.texParameteri(curContext.TEXTURE_2D, curContext.TEXTURE_MIN_FILTER, curContext.LINEAR_MIPMAP_LINEAR);
-        curContext.texParameteri(curContext.TEXTURE_2D, curContext.TEXTURE_MAG_FILTER, curContext.LINEAR);
-        curContext.texParameteri(curContext.TEXTURE_2D, curContext.TEXTURE_WRAP_T, curContext.CLAMP_TO_EDGE);
-        curContext.texParameteri(curContext.TEXTURE_2D, curContext.TEXTURE_WRAP_S, curContext.CLAMP_TO_EDGE);
+        p.curContext.bindTexture(p.curContext.TEXTURE_2D, pimage.__texture);
+        p.curContext.texParameteri(p.curContext.TEXTURE_2D, p.curContext.TEXTURE_MIN_FILTER, p.curContext.LINEAR_MIPMAP_LINEAR);
+        p.curContext.texParameteri(p.curContext.TEXTURE_2D, p.curContext.TEXTURE_MAG_FILTER, p.curContext.LINEAR);
+        p.curContext.texParameteri(p.curContext.TEXTURE_2D, p.curContext.TEXTURE_WRAP_T, p.curContext.CLAMP_TO_EDGE);
+        p.curContext.texParameteri(p.curContext.TEXTURE_2D, p.curContext.TEXTURE_WRAP_S, p.curContext.CLAMP_TO_EDGE);
         executeTexImage2D(pimage.__cvs);
-        curContext.generateMipmap(curContext.TEXTURE_2D);
+        p.curContext.generateMipmap(p.curContext.TEXTURE_2D);
       } else {
-        curContext.bindTexture(curContext.TEXTURE_2D, pimage.__texture);
+        p.curContext.bindTexture(p.curContext.TEXTURE_2D, pimage.__texture);
       }
 
       curTexture.width = pimage.width;
       curTexture.height = pimage.height;
       usingTexture = true;
-      curContext.useProgram(programObject3D);
+      p.curContext.useProgram(programObject3D);
       uniformi("usingTexture3d", programObject3D, "usingTexture", usingTexture);
     };
 
@@ -11750,7 +11752,7 @@
      * @see bezierVertex
      */
     p.curveVertex = function(x, y, z) {
-      isCurve = true;
+      p.isCurve = true;
       if(p.use3DContext){
         if (!curveInited){
           curveInit();
@@ -11760,21 +11762,21 @@
         vert[1] = y;
         vert[2] = z;
         curveVertArray.push(vert);
-        curveVertCount++;
+        p.curveVertCount++;
 
-        if (curveVertCount > 3){
-          curveVertexSegment( curveVertArray[curveVertCount-4][0],
-                              curveVertArray[curveVertCount-4][1],
-                              curveVertArray[curveVertCount-4][2],
-                              curveVertArray[curveVertCount-3][0],
-                              curveVertArray[curveVertCount-3][1],
-                              curveVertArray[curveVertCount-3][2],
-                              curveVertArray[curveVertCount-2][0],
-                              curveVertArray[curveVertCount-2][1],
-                              curveVertArray[curveVertCount-2][2],
-                              curveVertArray[curveVertCount-1][0],
-                              curveVertArray[curveVertCount-1][1],
-                              curveVertArray[curveVertCount-1][2] );
+        if (p.curveVertCount > 3){
+          curveVertexSegment( curveVertArray[p.curveVertCount-4][0],
+                              curveVertArray[p.curveVertCount-4][1],
+                              curveVertArray[p.curveVertCount-4][2],
+                              curveVertArray[p.curveVertCount-3][0],
+                              curveVertArray[p.curveVertCount-3][1],
+                              curveVertArray[p.curveVertCount-3][2],
+                              curveVertArray[p.curveVertCount-2][0],
+                              curveVertArray[p.curveVertCount-2][1],
+                              curveVertArray[p.curveVertCount-2][2],
+                              curveVertArray[p.curveVertCount-1][0],
+                              curveVertArray[p.curveVertCount-1][1],
+                              curveVertArray[p.curveVertCount-1][2] );
         }
       }
       else{
@@ -12070,7 +12072,7 @@
         proj.transpose();
 
         if (lineWidth > 0 && doStroke) {
-          curContext.useProgram(programObject2D);
+          p.curContext.useProgram(programObject2D);
 
           uniformMatrix("model2d", programObject2D, "model", false, [1,0,0,0,  0,1,0,0,  0,0,1,0,  0,0,0,1]);
           uniformMatrix("view2d", programObject2D, "view", false, view.array());
@@ -12079,13 +12081,13 @@
           uniformf("color2d", programObject2D, "color", strokeStyle);
           uniformi("picktype2d", programObject2D, "picktype", 0);
 
-          curContext.lineWidth(lineWidth);
+          p.curContext.lineWidth(lineWidth);
 
           vertexAttribPointer("vertex2d", programObject2D, "Vertex", 3, lineBuffer);
           disableVertexAttribPointer("aTextureCoord2d", programObject2D, "aTextureCoord");
 
-          curContext.bufferData(curContext.ARRAY_BUFFER, new Float32Array(lineVerts), curContext.STREAM_DRAW);
-          curContext.drawArrays(curContext.LINES, 0, 2);
+          p.curContext.bufferData(p.curContext.ARRAY_BUFFER, new Float32Array(lineVerts), p.curContext.STREAM_DRAW);
+          p.curContext.drawArrays(p.curContext.LINES, 0, 2);
         }
       } else {
         x1 = arguments[0];
@@ -12111,11 +12113,11 @@
         }
 
         if (doStroke) {
-          curContext.beginPath();
-          curContext.moveTo(x1 || 0, y1 || 0);
-          curContext.lineTo(x2 || 0, y2 || 0);
-          executeContextStroke();
-          curContext.closePath();
+          p.curContext.beginPath();
+          p.curContext.moveTo(x1 || 0, y1 || 0);
+          p.curContext.lineTo(x2 || 0, y2 || 0);
+          p.executeContextStroke();
+          p.curContext.closePath();
         }
       }
     };
@@ -12325,7 +12327,7 @@
         proj.transpose();
 
         if (lineWidth > 0 && doStroke) {
-          curContext.useProgram(programObject2D);
+          p.curContext.useProgram(programObject2D);
           uniformMatrix("model2d", programObject2D, "model", false, model.array());
           uniformMatrix("view2d", programObject2D, "view", false, view.array());
           uniformMatrix("projection2d", programObject2D, "projection", false, proj.array());
@@ -12336,12 +12338,12 @@
           vertexAttribPointer("vertex2d", programObject2D, "Vertex", 3, rectBuffer);
           disableVertexAttribPointer("aTextureCoord2d", programObject2D, "aTextureCoord");
 
-          curContext.lineWidth(lineWidth);
-          curContext.drawArrays(curContext.LINE_LOOP, 0, rectVerts.length / 3);
+          p.curContext.lineWidth(lineWidth);
+          p.curContext.drawArrays(p.curContext.LINE_LOOP, 0, rectVerts.length / 3);
         }
 
         if (doFill) {
-          curContext.useProgram(programObject3D);
+          p.curContext.useProgram(programObject3D);
           uniformMatrix("model3d", programObject3D, "model", false, model.array());
           uniformMatrix("view3d", programObject3D, "view", false, view.array());
           uniformMatrix("projection3d", programObject3D, "projection", false, proj.array());
@@ -12350,8 +12352,8 @@
           // since they share the same depth values). This is not entirely
           // working, but it's a start for drawing the outline. So
           // developers can start playing around with styles.
-          curContext.enable(curContext.POLYGON_OFFSET_FILL);
-          curContext.polygonOffset(1, 1);
+          p.curContext.enable(p.curContext.POLYGON_OFFSET_FILL);
+          p.curContext.polygonOffset(1, 1);
 
           uniformf("color3d", programObject3D, "color", fillStyle);
 
@@ -12373,8 +12375,8 @@
           vertexAttribPointer("vertex3d", programObject3D, "Vertex", 3, rectBuffer);
           vertexAttribPointer("normal3d", programObject3D, "Normal", 3, rectNormBuffer);
 
-          curContext.drawArrays(curContext.TRIANGLE_FAN, 0, rectVerts.length / 3);
-          curContext.disable(curContext.POLYGON_OFFSET_FILL);
+          p.curContext.drawArrays(p.curContext.TRIANGLE_FAN, 0, rectVerts.length / 3);
+          p.curContext.disable(p.curContext.POLYGON_OFFSET_FILL);
         }
       }
       else{
@@ -12396,7 +12398,7 @@
           return;
         }
 
-        curContext.beginPath();
+        p.curContext.beginPath();
 
         var offsetStart = 0;
         var offsetEnd = 0;
@@ -12416,13 +12418,13 @@
           y -= height / 2;
         }
 
-        curContext.rect(
+        p.curContext.rect(
         Math.round(x) - offsetStart, Math.round(y) - offsetStart, Math.round(width) + offsetEnd, Math.round(height) + offsetEnd);
 
-        executeContextFill();
-        executeContextStroke();
+        p.executeContextFill();
+        p.executeContextStroke();
 
-        curContext.closePath();
+        p.curContext.closePath();
       }
     };
 
@@ -12465,11 +12467,11 @@
 
       // Shortcut for drawing a 2D circle
       if ((!p.use3DContext) && (width === height)) {
-        curContext.beginPath();
-        curContext.arc(x - offsetStart, y - offsetStart, width / 2, 0, PConstants.TWO_PI, false);
-        executeContextFill();
-        executeContextStroke();
-        curContext.closePath();
+        p.curContext.beginPath();
+        p.curContext.arc(x - offsetStart, y - offsetStart, width / 2, 0, PConstants.TWO_PI, false);
+        p.executeContextFill();
+        p.executeContextStroke();
+        p.curContext.closePath();
       }
       else {
         var w = width / 2,
@@ -12499,12 +12501,12 @@
 
           //temporary workaround to not working fills for bezier -- will fix later
           var xAv = 0, yAv = 0, i, j;
-          for(i = 0; i < vertArray.length; i++){
-            xAv += vertArray[i][0];
-            yAv += vertArray[i][1];
+          for(i = 0; i < p.vertArray.length; i++){
+            xAv += p.vertArray[i][0];
+            yAv += p.vertArray[i][1];
           }
-          xAv /= vertArray.length;
-          yAv /= vertArray.length;
+          xAv /= p.vertArray.length;
+          yAv /= p.vertArray.length;
           var vert = [],
               fillVertArray = [],
               colorVertArray = [];
@@ -12524,13 +12526,13 @@
           vert[13] = normalX;
           vert[14] = normalY;
           vert[15] = normalZ;
-          vertArray.unshift(vert);
-          for(i = 0; i < vertArray.length; i++){
+          p.vertArray.unshift(vert);
+          for(i = 0; i < p.vertArray.length; i++){
             for(j = 0; j < 3; j++){
-              fillVertArray.push(vertArray[i][j]);
+              fillVertArray.push(p.vertArray[i][j]);
             }
             for(j = 5; j < 9; j++){
-              colorVertArray.push(vertArray[i][j]);
+              colorVertArray.push(p.vertArray[i][j]);
             }
           }
           fill3D(fillVertArray, "TRIANGLE_FAN", colorVertArray);
@@ -13130,14 +13132,14 @@
     p.requestImage = p.loadImage;
 
     function get$0() {
-      //return a PImage of curContext
+      //return a PImage of p.curContext
       var c = new PImage(p.width, p.height, PConstants.RGB);
-      c.fromImageData(curContext.getImageData(0, 0, p.width, p.height));
+      c.fromImageData(p.curContext.getImageData(0, 0, p.width, p.height));
       return c;
     }
     function get$2(x,y) {
       var data;
-      // return the color at x,y (int) of curContext
+      // return the color at x,y (int) of p.curContext
       // create a PImage object of size 1x1 and return the int of the pixels array element 0
       if (x < p.width && x >= 0 && y >= 0 && y < p.height) {
         if(isContextReplaced) {
@@ -13147,7 +13149,7 @@
                            data[offset+2], data[offset+3]);
         }
         // x,y is inside canvas space
-        data = curContext.getImageData(0|x, 0|y, 1, 1).data;
+        data = p.curContext.getImageData(0|x, 0|y, 1, 1).data;
         // changed for 0.9
         return p.color.toInt(data[0], data[1], data[2], data[3]);
       } else {
@@ -13169,9 +13171,9 @@
       }
     }
     function get$4(x, y, w, h) {
-      // return a PImage of w and h from cood x,y of curContext
+      // return a PImage of w and h from cood x,y of p.curContext
       var c = new PImage(w, h, PConstants.RGB);
-      c.fromImageData(curContext.getImageData(x, y, w, h));
+      c.fromImageData(p.curContext.getImageData(x, y, w, h));
       return c;
     }
     function get$5(x, y, w, h, img) {
@@ -13224,7 +13226,7 @@
     * @see imageMode
     */
     p.get = function get(x, y, w, h, img) {
-      // for 0 2 and 4 arguments use curContext, otherwise PImage.get was called
+      // for 0 2 and 4 arguments use p.curContext, otherwise PImage.get was called
       if (arguments.length === 2) {
         return get$2(x, y);
       } else if (arguments.length === 0) {
@@ -13267,7 +13269,7 @@
     // pixels caching
     function resetContext() {
       if(isContextReplaced) {
-        curContext = originalContext;
+        p.curContext = originalContext;
         isContextReplaced = false;
 
         p.updatePixels();
@@ -13277,23 +13279,23 @@
       function wrapFunction(newContext, name) {
         function wrapper() {
           resetContext();
-          curContext[name].apply(curContext, arguments);
+          p.curContext[name].apply(p.curContext, arguments);
         }
         newContext[name] = wrapper;
       }
       function wrapProperty(newContext, name) {
         function getter() {
           resetContext();
-          return curContext[name];
+          return p.curContext[name];
         }
         function setter(value) {
           resetContext();
-          curContext[name] = value;
+          p.curContext[name] = value;
         }
         p.defineProperty(newContext, name, { get: getter, set: setter });
       }
-      for(var n in curContext) {
-        if(typeof curContext[n] === 'function') {
+      for(var n in p.curContext) {
+        if(typeof p.curContext[n] === 'function') {
           wrapFunction(this, n);
         } else {
           wrapProperty(this, n);
@@ -13306,11 +13308,11 @@
       }
       p.loadPixels();
       if(proxyContext === null) {
-        originalContext = curContext;
+        originalContext = p.curContext;
         proxyContext = new SetPixelContextWrapper();
       }
       isContextReplaced = true;
-      curContext = proxyContext;
+      p.curContext = proxyContext;
       setPixelsCached = 0;
     }
 
@@ -13429,7 +13431,7 @@
     * @see updatePixels
     */
     p.loadPixels = function() {
-      p.imageData = curContext.getImageData(0, 0, p.width, p.height);
+      p.imageData = p.curContext.getImageData(0, 0, p.width, p.height);
     };
 
     // Draws a 1-Dimensional pixel array to Canvas
@@ -13448,7 +13450,7 @@
     */
     p.updatePixels = function() {
       if (p.imageData) {
-        curContext.putImageData(p.imageData, 0, 0);
+        p.curContext.putImageData(p.imageData, 0, 0);
       }
     };
 
@@ -13491,13 +13493,13 @@
     */
     p.hint = function hint(which) {
       if (which === PConstants.DISABLE_DEPTH_TEST) {
-         curContext.disable(curContext.DEPTH_TEST);
-         curContext.depthMask(false);
-         curContext.clear(curContext.DEPTH_BUFFER_BIT);
+         p.curContext.disable(p.curContext.DEPTH_TEST);
+         p.curContext.depthMask(false);
+         p.curContext.clear(p.curContext.DEPTH_BUFFER_BIT);
       }
       else if (which === PConstants.ENABLE_DEPTH_TEST) {
-         curContext.enable(curContext.DEPTH_TEST);
-         curContext.depthMask(true);
+         p.curContext.enable(p.curContext.DEPTH_TEST);
+         p.curContext.depthMask(true);
       }
     };
 
@@ -13555,8 +13557,8 @@
         if (color !== undef) {
           var c = p.color.toGLArray(color);
           refreshBackground = function() {
-            curContext.clearColor(c[0], c[1], c[2], c[3]);
-            curContext.clear(curContext.COLOR_BUFFER_BIT | curContext.DEPTH_BUFFER_BIT);
+            p.curContext.clearColor(c[0], c[1], c[2], c[3]);
+            p.curContext.clear(p.curContext.COLOR_BUFFER_BIT | p.curContext.DEPTH_BUFFER_BIT);
           };
         } else {
           // Handle image background for 3d context. not done yet.
@@ -13565,23 +13567,23 @@
       } else { // 2d context
         if (color !== undef) {
           refreshBackground = function() {
-            saveContext();
-            curContext.setTransform(1, 0, 0, 1, 0, 0);
+            p.saveContext(p);
+            p.curContext.setTransform(1, 0, 0, 1, 0, 0);
 
             if (curSketch.options.isTransparent) {
-              curContext.clearRect(0,0, p.width, p.height);
+              p.curContext.clearRect(0,0, p.width, p.height);
             }
-            curContext.fillStyle = p.color.toString(color);
-            curContext.fillRect(0, 0, p.width, p.height);
-            isFillDirty = true;
-            restoreContext();
+            p.curContext.fillStyle = p.color.toString(color);
+            p.curContext.fillRect(0, 0, p.width, p.height);
+            p.isFillDirty = true;
+            p.restoreContext(p);
           };
         } else {
           refreshBackground = function() {
-            saveContext();
-            curContext.setTransform(1, 0, 0, 1, 0, 0);
+            p.saveContext(p);
+            p.curContext.setTransform(1, 0, 0, 1, 0, 0);
             p.image(img, 0, 0);
-            restoreContext();
+            p.restoreContext(p);
           };
         }
       }
@@ -13632,7 +13634,7 @@
           if (fastImage) {
             var htmlElement = img.sourceImg;
             // Using HTML element's width and height in case if the image was resized.
-            curContext.drawImage(htmlElement, 0, 0,
+            p.curContext.drawImage(htmlElement, 0, 0,
               htmlElement.width, htmlElement.height, bounds.x, bounds.y, bounds.w, bounds.h);
           } else {
             var obj = img.toImageData();
@@ -13658,7 +13660,7 @@
               curTint(obj);
             }
 
-            curContext.drawImage(getCanvasData(obj).canvas, 0, 0,
+            p.curContext.drawImage(getCanvasData(obj).canvas, 0, 0,
               img.width, img.height, bounds.x, bounds.y, bounds.w, bounds.h);
           }
         }
@@ -13668,9 +13670,9 @@
     // Clears a rectangle in the Canvas element or the whole Canvas
     p.clear = function clear(x, y, width, height) {
       if (arguments.length === 0) {
-        curContext.clearRect(0, 0, p.width, p.height);
+        p.curContext.clearRect(0, 0, p.width, p.height);
       } else {
-        curContext.clearRect(x, y, width, height);
+        p.curContext.clearRect(x, y, width, height);
       }
     };
 
@@ -14709,10 +14711,10 @@
       this.origName = name;
     }
     PFont.prototype.width = function(str) {
-      if ("measureText" in curContext) {
-        return curContext.measureText(typeof str === "number" ? String.fromCharCode(str) : str).width / curTextSize;
-      } else if ("mozMeasureText" in curContext) {
-        return curContext.mozMeasureText(typeof str === "number" ? String.fromCharCode(str) : str) / curTextSize;
+      if ("measureText" in p.curContext) {
+        return p.curContext.measureText(typeof str === "number" ? String.fromCharCode(str) : str).width / curTextSize;
+      } else if ("mozMeasureText" in p.curContext) {
+        return p.curContext.mozMeasureText(typeof str === "number" ? String.fromCharCode(str) : str) / curTextSize;
       } else {
         return 0;
       }
@@ -14814,7 +14816,7 @@
       if (size) {
         p.textSize(size);
       } else {
-        curContext.font = curContext.mozTextStyle = curTextSize + "px " + curTextFont.name;
+        p.curContext.font = p.curContext.mozTextStyle = curTextSize + "px " + curTextFont.name;
       }
     };
 
@@ -14831,7 +14833,7 @@
     p.textSize = function textSize(size) {
       if (size) {
         curTextSize = size;
-        curContext.font = curContext.mozTextStyle = curTextSize + "px " + curTextFont.name;
+        p.curContext.font = p.curContext.mozTextStyle = curTextSize + "px " + curTextFont.name;
       }
     };
 
@@ -14871,22 +14873,22 @@
         if (textcanvas === undef) {
           textcanvas = document.createElement("canvas");
         }
-        var oldContext = curContext;
-        curContext = textcanvas.getContext("2d");
-        curContext.font = curContext.mozTextStyle = curTextSize + "px " + curTextFont.name;
-        if ("fillText" in curContext) {
-          textcanvas.width = curContext.measureText(str).width;
-        } else if ("mozDrawText" in curContext) {
-          textcanvas.width = curContext.mozMeasureText(str);
+        var oldContext = p.curContext;
+        p.curContext = textcanvas.getContext("2d");
+        p.curContext.font = p.curContext.mozTextStyle = curTextSize + "px " + curTextFont.name;
+        if ("fillText" in p.curContext) {
+          textcanvas.width = p.curContext.measureText(str).width;
+        } else if ("mozDrawText" in p.curContext) {
+          textcanvas.width = p.curContext.mozMeasureText(str);
         }
-        curContext = oldContext;
+        p.curContext = oldContext;
         return textcanvas.width;
       } else {
-        curContext.font = curTextSize + "px " + curTextFont.name;
-        if ("fillText" in curContext) {
-          return curContext.measureText(str).width;
-        } else if ("mozDrawText" in curContext) {
-          return curContext.mozMeasureText(str);
+        p.curContext.font = curTextSize + "px " + curTextFont.name;
+        if ("fillText" in p.curContext) {
+          return p.curContext.measureText(str).width;
+        } else if ("mozDrawText" in p.curContext) {
+          return p.curContext.mozMeasureText(str);
         }
       }
     };
@@ -15143,18 +15145,18 @@
       var textWidth = 0, xOffset = 0;
       // If the font is a standard Canvas font...
       if (!curTextFont.glyph) {
-        if (str && ("fillText" in curContext || "mozDrawText" in curContext)) {
-          if (isFillDirty) {
-            curContext.fillStyle = p.color.toString(currentFillColor);
-            isFillDirty = false;
+        if (str && ("fillText" in p.curContext || "mozDrawText" in p.curContext)) {
+          if (p.isFillDirty) {
+            p.curContext.fillStyle = p.color.toString(currentFillColor);
+            p.isFillDirty = false;
           }
 
           // horizontal offset/alignment
           if(align === PConstants.RIGHT || align === PConstants.CENTER) {
-            if ("fillText" in curContext) {
-              textWidth = curContext.measureText(str).width;
-            } else if ("mozDrawText" in curContext) {
-              textWidth = curContext.mozMeasureText(str);
+            if ("fillText" in p.curContext) {
+              textWidth = p.curContext.measureText(str).width;
+            } else if ("mozDrawText" in p.curContext) {
+              textWidth = p.curContext.mozMeasureText(str);
             }
 
             if(align === PConstants.RIGHT) {
@@ -15164,20 +15166,20 @@
             }
           }
 
-          if ("fillText" in curContext) {
-            curContext.fillText(str, x+xOffset, y);
-          } else if ("mozDrawText" in curContext) {
-            saveContext();
-            curContext.translate(x+xOffset, y);
-            curContext.mozDrawText(str);
-            restoreContext();
+          if ("fillText" in p.curContext) {
+            p.curContext.fillText(str, x+xOffset, y);
+          } else if ("mozDrawText" in p.curContext) {
+            p.saveContext(p);
+            p.curContext.translate(x+xOffset, y);
+            p.curContext.mozDrawText(str);
+            p.restoreContext(p);
           }
         }
       } else {
         // If the font is a Batik SVG font...
         var font = p.glyphTable[curTextFont.name];
-        saveContext();
-        curContext.translate(x, y + curTextSize);
+        p.saveContext(p);
+        p.curContext.translate(x, y + curTextSize);
 
         // horizontal offset/alignment
         if(align === PConstants.RIGHT || align === PConstants.CENTER) {
@@ -15193,7 +15195,7 @@
         var upem   = font.units_per_em,
           newScale = 1 / upem * curTextSize;
 
-        curContext.scale(newScale, newScale);
+        p.curContext.scale(newScale, newScale);
 
         for (var i=0, len=str.length; i < len; i++) {
           // Test character against glyph table
@@ -15203,7 +15205,7 @@
             Processing.debug(e);
           }
         }
-        restoreContext();
+        p.restoreContext(p);
       }
     }
 
@@ -15212,36 +15214,36 @@
       if (textcanvas === undef) {
         textcanvas = document.createElement("canvas");
       }
-      var oldContext = curContext;
-      curContext = textcanvas.getContext("2d");
-      curContext.font = curContext.mozTextStyle = curTextSize + "px " + curTextFont.name;
+      var oldContext = p.curContext;
+      p.curContext = textcanvas.getContext("2d");
+      p.curContext.font = p.curContext.mozTextStyle = curTextSize + "px " + curTextFont.name;
       var textWidth = 0;
-      if ("fillText" in curContext) {
-        textWidth = curContext.measureText(str).width;
-      } else if ("mozDrawText" in curContext) {
-        textWidth = curContext.mozMeasureText(str);
+      if ("fillText" in p.curContext) {
+        textWidth = p.curContext.measureText(str).width;
+      } else if ("mozDrawText" in p.curContext) {
+        textWidth = p.curContext.mozMeasureText(str);
       }
       textcanvas.width = textWidth;
       textcanvas.height = curTextSize;
-      curContext = textcanvas.getContext("2d"); // refreshes curContext
-      curContext.font = curContext.mozTextStyle = curTextSize + "px " + curTextFont.name;
-      curContext.textBaseline="top";
+      p.curContext = textcanvas.getContext("2d"); // refreshes p.curContext
+      p.curContext.font = p.curContext.mozTextStyle = curTextSize + "px " + curTextFont.name;
+      p.curContext.textBaseline="top";
 
       // paint on 2D canvas
       text$line(str,0,0,0,PConstants.LEFT);
 
       // use it as a texture
       var aspect = textcanvas.width/textcanvas.height;
-      curContext = oldContext;
+      p.curContext = oldContext;
 
-      curContext.bindTexture(curContext.TEXTURE_2D, textTex);
+      p.curContext.bindTexture(p.curContext.TEXTURE_2D, textTex);
       executeTexImage2D(textcanvas);
-      curContext.texParameteri(curContext.TEXTURE_2D, curContext.TEXTURE_MAG_FILTER, curContext.LINEAR);
-      curContext.texParameteri(curContext.TEXTURE_2D, curContext.TEXTURE_MIN_FILTER, curContext.LINEAR);
-      curContext.texParameteri(curContext.TEXTURE_2D, curContext.TEXTURE_WRAP_T, curContext.CLAMP_TO_EDGE);
-      curContext.texParameteri(curContext.TEXTURE_2D, curContext.TEXTURE_WRAP_S, curContext.CLAMP_TO_EDGE);
+      p.curContext.texParameteri(p.curContext.TEXTURE_2D, p.curContext.TEXTURE_MAG_FILTER, p.curContext.LINEAR);
+      p.curContext.texParameteri(p.curContext.TEXTURE_2D, p.curContext.TEXTURE_MIN_FILTER, p.curContext.LINEAR);
+      p.curContext.texParameteri(p.curContext.TEXTURE_2D, p.curContext.TEXTURE_WRAP_T, p.curContext.CLAMP_TO_EDGE);
+      p.curContext.texParameteri(p.curContext.TEXTURE_2D, p.curContext.TEXTURE_WRAP_S, p.curContext.CLAMP_TO_EDGE);
       // If we don't have a power of two texture, we can't mipmap it.
-      // curContext.generateMipmap(curContext.TEXTURE_2D);
+      // p.curContext.generateMipmap(p.curContext.TEXTURE_2D);
 
       // horizontal offset/alignment
       var xOffset = 0;
@@ -15266,7 +15268,7 @@
       proj.set(projection);
       proj.transpose();
 
-      curContext.useProgram(programObject2D);
+      p.curContext.useProgram(programObject2D);
       vertexAttribPointer("vertex2d", programObject2D, "Vertex", 3, textBuffer);
       vertexAttribPointer("aTextureCoord2d", programObject2D, "aTextureCoord", 2, textureBuffer);
       uniformi("uSampler2d", programObject2D, "uSampler", [0]);
@@ -15275,8 +15277,8 @@
       uniformMatrix("view2d", programObject2D, "view", false, view.array());
       uniformMatrix("projection2d", programObject2D, "projection", false, proj.array());
       uniformf("color2d", programObject2D, "color", fillStyle);
-      curContext.bindBuffer(curContext.ELEMENT_ARRAY_BUFFER, indexBuffer);
-      curContext.drawElements(curContext.TRIANGLES, 6, curContext.UNSIGNED_SHORT, 0);
+      p.curContext.bindBuffer(p.curContext.ELEMENT_ARRAY_BUFFER, indexBuffer);
+      p.curContext.drawElements(p.curContext.TRIANGLES, 6, p.curContext.UNSIGNED_SHORT, 0);
     }
 
     function text$4(str, x, y, z) {
@@ -15316,7 +15318,7 @@
         return;
       }
 
-      curContext.font = curTextSize + "px " + curTextFont.name;
+      p.curContext.font = curTextSize + "px " + curTextFont.name;
 
       var spaceLoc = null,
           yOffset = 0,
@@ -15326,10 +15328,10 @@
 
       for (var j = 0; j < strings.length; j++) {
         for (var jj = 0; jj < strings[j].length; jj++) {
-          if ("fillText" in curContext) {
-            letterWidth = curContext.measureText(strings[j][jj]).width;
-          } else if ("mozDrawText" in curContext) {
-            letterWidth = curContext.mozMeasureText(strings[j][jj]);
+          if ("fillText" in p.curContext) {
+            letterWidth = p.curContext.measureText(strings[j][jj]).width;
+          } else if ("mozDrawText" in p.curContext) {
+            letterWidth = p.curContext.mozMeasureText(strings[j][jj]);
           }
           lineWidth += letterWidth;
           if (strings[j][jj] === " ") {
@@ -15476,7 +15478,7 @@
         var c = regex("[A-Za-z][0-9\\- ]+|Z", d);
 
         // Begin storing path object
-        path = "var path={draw:function(){saveContext();curContext.beginPath();";
+        path = "var path={draw:function(){saveContext();p.curContext.beginPath();";
 
         x = 0;
         y = 0;
@@ -15495,33 +15497,33 @@
 
           switch (com[0]) {
             case "M":
-              //curContext.moveTo(x,-y);
+              //p.curContext.moveTo(x,-y);
               x = parseFloat(xy[0][0]);
               y = parseFloat(xy[1][0]);
-              path += "curContext.moveTo(" + x + "," + (-y) + ");";
+              path += "p.curContext.moveTo(" + x + "," + (-y) + ");";
               break;
 
             case "L":
-              //curContext.lineTo(x,-y);
+              //p.curContext.lineTo(x,-y);
               x = parseFloat(xy[0][0]);
               y = parseFloat(xy[1][0]);
-              path += "curContext.lineTo(" + x + "," + (-y) + ");";
+              path += "p.curContext.lineTo(" + x + "," + (-y) + ");";
               break;
 
             case "H":
-              //curContext.lineTo(x,-y)
+              //p.curContext.lineTo(x,-y)
               x = parseFloat(xy[0][0]);
-              path += "curContext.lineTo(" + x + "," + (-y) + ");";
+              path += "p.curContext.lineTo(" + x + "," + (-y) + ");";
               break;
 
             case "V":
-              //curContext.lineTo(x,-y);
+              //p.curContext.lineTo(x,-y);
               y = parseFloat(xy[0][0]);
-              path += "curContext.lineTo(" + x + "," + (-y) + ");";
+              path += "p.curContext.lineTo(" + x + "," + (-y) + ");";
               break;
 
             case "T":
-              //curContext.quadraticCurveTo(cx,-cy,nx,-ny);
+              //p.curContext.quadraticCurveTo(cx,-cy,nx,-ny);
               nx = parseFloat(xy[0][0]);
               ny = parseFloat(xy[1][0]);
 
@@ -15535,33 +15537,33 @@
                 cy = y;
               }
 
-              path += "curContext.quadraticCurveTo(" + cx + "," + (-cy) + "," + nx + "," + (-ny) + ");";
+              path += "p.curContext.quadraticCurveTo(" + cx + "," + (-cy) + "," + nx + "," + (-ny) + ");";
               x = nx;
               y = ny;
               break;
 
             case "Q":
-              //curContext.quadraticCurveTo(cx,-cy,nx,-ny);
+              //p.curContext.quadraticCurveTo(cx,-cy,nx,-ny);
               cx = parseFloat(xy[0][0]);
               cy = parseFloat(xy[1][0]);
               nx = parseFloat(xy[2][0]);
               ny = parseFloat(xy[3][0]);
-              path += "curContext.quadraticCurveTo(" + cx + "," + (-cy) + "," + nx + "," + (-ny) + ");";
+              path += "p.curContext.quadraticCurveTo(" + cx + "," + (-cy) + "," + nx + "," + (-ny) + ");";
               x = nx;
               y = ny;
               break;
 
             case "Z":
-              //curContext.closePath();
-              path += "curContext.closePath();";
+              //p.curContext.closePath();
+              path += "p.curContext.closePath();";
               break;
           }
           lastCom = com[0];
         }
 
-        path += "executeContextFill();executeContextStroke();";
-        path += "restoreContext();";
-        path += "curContext.translate(" + horiz_adv_x + ",0);";
+        path += "p.executeContextFill();p.executeContextStroke();";
+        path += "p.restoreContext(p);";
+        path += "p.curContext.translate(" + horiz_adv_x + ",0);";
         path += "}}";
 
         return path;
@@ -16170,18 +16172,18 @@
 
       if (!curSketch.use3DContext) {
         // Setup default 2d canvas context.
-        curContext = curElement.getContext('2d');
+        p.curContext = curElement.getContext('2d');
 
         // Externalize the default context
-        p.externals.context = curContext;
+        p.externals.context = p.curContext;
 
         modelView = new PMatrix2D();
 
         // Canvas has trouble rendering single pixel stuff on whole-pixel
         // counts, so we slightly offset it (this is super lame).
-        curContext.translate(0.5, 0.5);
+        p.curContext.translate(0.5, 0.5);
 
-        curContext.lineCap = 'round';
+        p.curContext.lineCap = 'round';
 
         // Set default stroke and fill color
         p.stroke(0);
@@ -16213,7 +16215,7 @@
             processing.setup();
             // if any transforms were performed in setup reset to identify matrix so draw loop is unpoluted
             if (!curSketch.use3DContext) {
-              curContext.setTransform(1, 0, 0, 1, 0, 0);
+              p.curContext.setTransform(1, 0, 0, 1, 0, 0);
             }
           }
 
@@ -17805,7 +17807,7 @@
 
   Processing.logger = tinylogLite;
 
-  Processing.version = "@VERSION@";
+  Processing.version = "1.0.0";
 
   // Share lib space
   Processing.lib = {};
