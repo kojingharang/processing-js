@@ -1,6 +1,6 @@
 /*
 
-    P R O C E S S I N G . J S - 1.0.0
+    P R O C E S S I N G . J S - @VERSION@
     a port of the Processing visualization language
 
     License       : MIT
@@ -17807,7 +17807,7 @@ return;
 
   Processing.logger = tinylogLite;
 
-  Processing.version = "1.0.0";
+  Processing.version = "@VERSION@";
 
   // Share lib space
   Processing.lib = {};
