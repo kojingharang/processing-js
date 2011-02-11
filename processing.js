@@ -7960,7 +7960,6 @@
      * @see #print
      */
     p.println = function println(message) {
-return;
       var bufferLen = logBuffer.length;
       if (bufferLen) {
         Processing.logger.log(logBuffer.join(""));
